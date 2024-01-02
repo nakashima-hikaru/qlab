@@ -43,10 +43,7 @@ impl<V: Float + FromPrimitive, D: DayCount> LinearInterpolation<V, D> {
         }
         let maturities: Vec<_> = maturities
             .iter()
-            .map(|maturity| {
-                day_count
-                    .calculate_day_count_fraction(settlement_date, *maturity)
-            })
+            .map(|maturity| day_count.calculate_day_count_fraction(settlement_date, *maturity))
             .collect::<Result<Vec<V>, _>>()?;
         let mut points = Vec::with_capacity(maturities.len());
         for (maturity, spot_yield) in maturities.iter().copied().zip(spot_yields) {
@@ -64,7 +61,7 @@ impl<V: Float + FromPrimitive, D: DayCount> LinearInterpolation<V, D> {
 }
 
 impl<V: Float + FromPrimitive + Debug, D: DayCount> YieldCurveInner<V>
-for LinearInterpolation<V, D>
+    for LinearInterpolation<V, D>
 {
     fn yield_curve(&self, t: V) -> Result<V, ComputationError> {
         let last_point = self.points.last().ok_or(ComputationError::InvalidInput(
@@ -83,14 +80,12 @@ for LinearInterpolation<V, D>
 
         Ok(self.points[idx - 1].spot_yield
             + (self.points[idx].spot_yield - self.points[idx - 1].spot_yield)
-            / (self.points[idx].maturity - self.points[idx - 1].maturity)
-            * (t - self.points[idx - 1].maturity))
+                / (self.points[idx].maturity - self.points[idx - 1].maturity)
+                * (t - self.points[idx - 1].maturity))
     }
 }
 
-impl<V: Float + FromPrimitive + Debug, D: DayCount> YieldCurve<V, D>
-for LinearInterpolation<V, D>
-{
+impl<V: Float + FromPrimitive + Debug, D: DayCount> YieldCurve<V, D> for LinearInterpolation<V, D> {
     fn settlement_date(&self) -> Date {
         self.settlement_date
     }

@@ -23,7 +23,8 @@ fn main() {
         coupon_frequency,
         coupon_rate,
         face_value,
-    ).unwrap();
+    )
+    .unwrap();
     let spot_settle_date = Date::from_ymd_opt(2023, 10, 10).unwrap();
     let maturities = [
         Date::from_ymd_opt(2023, 10, 11).unwrap(),
@@ -45,7 +46,9 @@ fn main() {
     let day_count = Act365::default();
     let yield_curve =
         LinearInterpolation::new(spot_settle_date, &maturities, spot_yields, day_count).unwrap();
-    let val = bond_20_yr.discounted_value(spot_settle_date, &yield_curve).unwrap();
+    let val = bond_20_yr
+        .discounted_value(spot_settle_date, &yield_curve)
+        .unwrap();
     println!("{}", bond_20_yr.bond_id());
     println!("{val}");
 }

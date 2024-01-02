@@ -7,14 +7,19 @@ use qlab_error::ComputationError;
 pub struct Thirty360 {}
 
 impl Thirty360 {
-    #[allow(clippy::cast_sign_loss)]  // validation deals with it
+    #[allow(clippy::cast_sign_loss)] // validation deals with it
     fn date_diff(date1: Date, date2: Date) -> Result<u32, ComputationError> {
         if date1 > date2 {
-            return Err(ComputationError::InvalidInput(format!("date1: {date1:?} must precede date2: {date2:?}")));
+            return Err(ComputationError::InvalidInput(format!(
+                "date1: {date1:?} must precede date2: {date2:?}"
+            )));
         }
         let d1 = date1.day().min(30);
         let d2 = date2.day().min(30);
-        Ok(360 * (date2.year() - date1.year()) as u32 + 30 * (date2.month() - date1.month()) + d2 - d1)
+        Ok(
+            360 * (date2.year() - date1.year()) as u32 + 30 * (date2.month() - date1.month()) + d2
+                - d1,
+        )
     }
 }
 
@@ -24,8 +29,8 @@ impl DayCount for Thirty360 {
         date1: Date,
         date2: Date,
     ) -> Result<V, ComputationError> {
-        let date_diff = V::from_u32(Self::date_diff(date1, date2)?)
-            .ok_or(ComputationError::CastNumberError)?;
+        let date_diff =
+            V::from_u32(Self::date_diff(date1, date2)?).ok_or(ComputationError::CastNumberError)?;
         let denomination = V::from(360.0).ok_or(ComputationError::CastNumberError)?;
         Ok(date_diff.div(denomination))
     }
