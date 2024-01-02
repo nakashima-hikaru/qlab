@@ -1,0 +1,19 @@
+[package]
+name = "qlab-time"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+keywords.workspace = true
+categories.workspace = true
+readme = "../../README.md"
+description = "Time related code for the qlab"
+
+[dependencies]
+qlab-error = { workspace = true }
+chrono = "0.4.31"
+num-traits = "0.2.17"
+
+[lints]
+workspace = true
