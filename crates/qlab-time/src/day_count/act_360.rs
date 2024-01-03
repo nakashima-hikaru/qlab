@@ -1,7 +1,7 @@
 use crate::date::Date;
 use crate::day_count::DayCount;
 use num_traits::{Float, FromPrimitive};
-use qlab_error::ComputationError;
+use qlab_error::{ComputeError, QLabResult};
 
 #[derive(Default, Debug)]
 pub struct Act360 {}
@@ -11,9 +11,15 @@ impl DayCount for Act360 {
         &self,
         date1: Date,
         date2: Date,
-    ) -> Result<V, ComputationError> {
-        let date_diff = V::from_i32(date2 - date1).ok_or(ComputationError::CastNumberError)?;
-        let denomination = V::from(360.0).ok_or(ComputationError::CastNumberError)?;
+    ) -> QLabResult<V> {
+        let date_diff = V::from_i32(date2 - date1).ok_or(ComputeError::CastNumberError(
+            format!("{}", date2 - date1).into(),
+        ))?;
+        let denomination =
+            V::from_i32(360).ok_or(ComputeError::CastNumberError(format!("{}", 360).into()))?;
+        if denomination.eq(&V::zero()) {
+            return Err(ComputeError::ZeroDivisionError.into());
+        }
         Ok(date_diff.div(denomination))
     }
 }

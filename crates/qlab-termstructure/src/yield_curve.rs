@@ -2,22 +2,23 @@ mod grid_point;
 pub mod linear_interpolation;
 
 use num_traits::{Float, FromPrimitive};
-use qlab_error::ComputationError;
+use qlab_error::ComputeError::InvalidInput;
+use qlab_error::QLabResult;
 use qlab_time::date::Date;
 use qlab_time::day_count::DayCount;
 
 mod private {
     use num_traits::{Float, FromPrimitive};
-    use qlab_error::ComputationError;
+    use qlab_error::QLabResult;
 
     pub trait YieldCurveInner<V: Float + FromPrimitive> {
-        fn yield_curve(&self, t: V) -> Result<V, ComputationError>;
+        fn yield_curve(&self, t: V) -> QLabResult<V>;
     }
 }
 
 /// A trait representing a yield curve with discount factor calculations.
 ///
-/// The trait is generic over the type of floating point values (`V`) and the day count convention (`D`).
+/// The trait is generic over the type of Floating point values (`V`) and the day count convention (`D`).
 pub trait YieldCurve<V: Float + FromPrimitive, D: DayCount>: private::YieldCurveInner<V> {
     /// Calculates the settlement date.
     ///
@@ -61,17 +62,21 @@ pub trait YieldCurve<V: Float + FromPrimitive, D: DayCount>: private::YieldCurve
     ///
     /// # Errors
     /// An Error returns if invalid inputs are passed
-    fn discount_factor(&self, d1: Date, d2: Date) -> Result<V, ComputationError> {
+    fn discount_factor(&self, d1: Date, d2: Date) -> QLabResult<V> {
         if d2 < d1 {
-            return Err(ComputationError::InvalidInput(format!(
-                "d1: {d1:?} must be smaller than d2: {d2:?}"
-            )));
+            return Err(
+                InvalidInput(format!("d1: {d1} must be smaller than d2: {d2}").into()).into(),
+            );
         }
         if d1 < self.settlement_date() || d2 < self.settlement_date() {
-            return Err(ComputationError::InvalidInput(format!(
-                "Either {d1:?} or {d2:?} exceeds settlement date: {:?}",
-                self.settlement_date()
-            )));
+            return Err(InvalidInput(
+                format!(
+                    "Either {d1} or {d2} exceeds settlement date: {:?}",
+                    self.settlement_date()
+                )
+                .into(),
+            )
+            .into());
         }
         let t2 = self
             .day_count_fraction()

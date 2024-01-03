@@ -1,4 +1,6 @@
 use chrono::{Datelike, NaiveDate};
+use std::fmt;
+use std::fmt::{Debug, Formatter};
 use std::ops::Sub;
 
 /// Represents a date.
@@ -217,6 +219,12 @@ impl Sub for Date {
     }
 }
 
+impl fmt::Display for Date {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&self.0, f)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::Date;
@@ -267,10 +275,10 @@ mod tests {
     #[test]
     fn test_leap_year() {
         let date = Date::from_ymd_opt(2023, 12, 27).unwrap();
-        assert_eq!(date.leap_year(), false);
+        assert!(!date.leap_year());
 
         let date = Date::from_ymd_opt(2024, 12, 27).unwrap();
-        assert_eq!(date.leap_year(), true);
+        assert!(date.leap_year());
     }
 
     #[test]
@@ -337,7 +345,7 @@ mod tests {
     #[test]
     fn test_serial_date() {
         let date = Date::from_ymd_opt(2023, 3, 1).unwrap();
-        assert_eq!(date.serial_date(), 738580);
+        assert_eq!(date.serial_date(), 738_580);
     }
 
     #[test]

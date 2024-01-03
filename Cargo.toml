@@ -24,5 +24,4 @@ unsafe_code = "forbid"
 
 [workspace.lints.clippy]
 pedantic = "warn"
-#multiple_crate_versions = "allow"
-#cargo = "warn"
+cargo = "warn"

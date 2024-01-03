@@ -4,7 +4,7 @@ pub mod thirty_360;
 
 use crate::date::Date;
 use num_traits::{Float, FromPrimitive};
-use qlab_error::ComputationError;
+use qlab_error::QLabResult;
 
 pub trait DayCount {
     /// Calculates the day count fraction between two dates.
@@ -30,5 +30,5 @@ pub trait DayCount {
         &self,
         date1: Date,
         date2: Date,
-    ) -> Result<V, ComputationError>;
+    ) -> QLabResult<V>;
 }

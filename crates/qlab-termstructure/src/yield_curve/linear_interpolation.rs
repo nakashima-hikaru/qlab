@@ -1,8 +1,10 @@
 use crate::yield_curve::grid_point::GridPoint;
 use crate::yield_curve::private::YieldCurveInner;
 use crate::yield_curve::YieldCurve;
+use num_traits::real::Real;
 use num_traits::{Float, FromPrimitive};
-use qlab_error::ComputationError;
+use qlab_error::ComputeError::InvalidInput;
+use qlab_error::QLabResult;
 use qlab_time::date::Date;
 use qlab_time::day_count::DayCount;
 use std::fmt::Debug;
@@ -35,11 +37,11 @@ impl<V: Float + FromPrimitive, D: DayCount> LinearInterpolation<V, D> {
         maturities: &[Date],
         spot_yields: Vec<V>,
         day_count: D,
-    ) -> Result<Self, ComputationError> {
+    ) -> QLabResult<Self> {
         if maturities.len() != spot_yields.len() {
-            return Err(ComputationError::InvalidInput(
-                "maturities and spot_yields are different lengths".to_string(),
-            ));
+            return Err(
+                InvalidInput("maturities and spot_yields are different lengths".into()).into(),
+            );
         }
         let maturities: Vec<_> = maturities
             .iter()
@@ -63,19 +65,21 @@ impl<V: Float + FromPrimitive, D: DayCount> LinearInterpolation<V, D> {
 impl<V: Float + FromPrimitive + Debug, D: DayCount> YieldCurveInner<V>
     for LinearInterpolation<V, D>
 {
-    fn yield_curve(&self, t: V) -> Result<V, ComputationError> {
-        let last_point = self.points.last().ok_or(ComputationError::InvalidInput(
-            "Grid points doesn't exist".to_string(),
-        ))?;
+    fn yield_curve(&self, t: V) -> QLabResult<V> {
+        let last_point = self
+            .points
+            .last()
+            .ok_or(InvalidInput("Grid points doesn't exist".into()))?;
 
         if t >= last_point.maturity {
             return Ok(last_point.spot_yield);
         }
         let idx = self.points.partition_point(|&point| point.maturity < t);
         if idx == 0 {
-            return Err(ComputationError::InvalidInput(format!(
-                "t: {t:?} is earlier than the maturity of the first grid point"
-            )));
+            return Err(InvalidInput(
+                format!("t: {t:?} is earlier than the maturity of the first grid point").into(),
+            )
+            .into());
         }
 
         Ok(self.points[idx - 1].spot_yield
@@ -85,7 +89,9 @@ impl<V: Float + FromPrimitive + Debug, D: DayCount> YieldCurveInner<V>
     }
 }
 
-impl<V: Float + FromPrimitive + Debug, D: DayCount> YieldCurve<V, D> for LinearInterpolation<V, D> {
+impl<V: Float + FromPrimitive + Debug + Real, D: DayCount> YieldCurve<V, D>
+    for LinearInterpolation<V, D>
+{
     fn settlement_date(&self) -> Date {
         self.settlement_date
     }

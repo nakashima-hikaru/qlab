@@ -1,5 +1,5 @@
 use num_traits::{Float, FromPrimitive};
-use qlab_error::ComputationError;
+use qlab_error::QLabResult;
 use qlab_termstructure::yield_curve::YieldCurve;
 use qlab_time::date::Date;
 use qlab_time::day_count::DayCount;
@@ -147,7 +147,7 @@ impl<V: Float + FromPrimitive + MulAssign<V> + AddAssign<V>> Bond<V> {
         &self,
         bond_settle_date: Date,
         yield_curve: &impl YieldCurve<V, D>,
-    ) -> Result<V, ComputationError> {
+    ) -> QLabResult<V> {
         let mut pv = V::zero();
         for i in 0..self.bond_cash_flows.len() {
             if bond_settle_date < self.bond_cash_flows[i].due_date {

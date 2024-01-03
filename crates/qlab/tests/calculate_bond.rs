@@ -28,7 +28,7 @@ fn main() {
     let spot_settle_date = Date::from_ymd_opt(2023, 10, 10).unwrap();
     let maturities = [
         Date::from_ymd_opt(2023, 10, 11).unwrap(),
-        Date::from_ymd_opt(2024, 01, 10).unwrap(),
+        Date::from_ymd_opt(2024, 1, 10).unwrap(),
         Date::from_ymd_opt(2024, 4, 10).unwrap(),
         Date::from_ymd_opt(2024, 10, 10).unwrap(),
         Date::from_ymd_opt(2025, 10, 10).unwrap(),
@@ -50,5 +50,5 @@ fn main() {
         .discounted_value(spot_settle_date, &yield_curve)
         .unwrap();
     println!("{}", bond_20_yr.bond_id());
-    println!("{val}");
+    println!("{val}"); // 1314.934419206669
 }
