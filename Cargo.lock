@@ -138,6 +138,7 @@ version = "0.1.0"
 dependencies = [
  "qlab-error",
  "qlab-instrument",
+ "qlab-math",
  "qlab-termstructure",
  "qlab-time",
 ]
@@ -155,8 +156,17 @@ version = "0.1.0"
 dependencies = [
  "num-traits",
  "qlab-error",
+ "qlab-math",
  "qlab-termstructure",
  "qlab-time",
+]
+
+[[package]]
+name = "qlab-math"
+version = "0.1.0"
+dependencies = [
+ "num-traits",
+ "qlab-error",
 ]
 
 [[package]]
@@ -165,6 +175,7 @@ version = "0.1.0"
 dependencies = [
  "num-traits",
  "qlab-error",
+ "qlab-math",
  "qlab-time",
 ]
 

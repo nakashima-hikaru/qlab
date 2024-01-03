@@ -1,5 +1,6 @@
 use qlab_instrument::bond::Bond;
-use qlab_termstructure::yield_curve::linear_interpolation::LinearInterpolation;
+use qlab_math::interpolation::linear::Linear;
+use qlab_termstructure::yield_curve::YieldCurve;
 use qlab_time::date::Date;
 use qlab_time::day_count::act_365::Act365;
 use qlab_time::frequency::Frequency;
@@ -44,8 +45,15 @@ fn main() {
         0.02, 0.0219, 0.0237, 0.0267, 0.0312, 0.0343, 0.0378, 0.0393, 0.04, 0.0401, 0.0401, 0.04,
     ];
     let day_count = Act365::default();
-    let yield_curve =
-        LinearInterpolation::new(spot_settle_date, &maturities, spot_yields, day_count).unwrap();
+    let interpolator = Linear::new();
+    let yield_curve = YieldCurve::new(
+        spot_settle_date,
+        &maturities,
+        &spot_yields,
+        day_count,
+        interpolator,
+    )
+    .unwrap();
     let val = bond_20_yr
         .discounted_value(spot_settle_date, &yield_curve)
         .unwrap();

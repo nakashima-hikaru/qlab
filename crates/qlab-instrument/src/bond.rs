@@ -1,5 +1,6 @@
 use num_traits::{Float, FromPrimitive};
 use qlab_error::QLabResult;
+use qlab_math::interpolation::Interpolator;
 use qlab_termstructure::yield_curve::YieldCurve;
 use qlab_time::date::Date;
 use qlab_time::day_count::DayCount;
@@ -143,10 +144,10 @@ impl<V: Float + FromPrimitive + MulAssign<V> + AddAssign<V>> Bond<V> {
     ///
     /// # Errors
     /// Error occurs if a discount factor calculation fails
-    pub fn discounted_value<D: DayCount>(
+    pub fn discounted_value<D: DayCount, I: Interpolator<V>>(
         &self,
         bond_settle_date: Date,
-        yield_curve: &impl YieldCurve<V, D>,
+        yield_curve: &YieldCurve<V, D, I>,
     ) -> QLabResult<V> {
         let mut pv = V::zero();
         for i in 0..self.bond_cash_flows.len() {

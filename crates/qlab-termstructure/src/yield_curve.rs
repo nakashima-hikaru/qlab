@@ -1,45 +1,75 @@
-mod grid_point;
-pub mod linear_interpolation;
-
 use num_traits::{Float, FromPrimitive};
 use qlab_error::ComputeError::InvalidInput;
 use qlab_error::QLabResult;
+use qlab_math::interpolation::Interpolator;
 use qlab_time::date::Date;
 use qlab_time::day_count::DayCount;
+use std::marker::PhantomData;
 
 mod private {
     use num_traits::{Float, FromPrimitive};
     use qlab_error::QLabResult;
+    use qlab_math::interpolation::Interpolator;
 
-    pub trait YieldCurveInner<V: Float + FromPrimitive> {
-        fn yield_curve(&self, t: V) -> QLabResult<V>;
+    pub trait YieldCurveInner<V: Float + FromPrimitive, I: Interpolator<V>> {
+        fn interpolator(&self) -> &I;
+        fn yield_curve(&self, t: V) -> QLabResult<V> {
+            self.interpolator().value(t)
+        }
     }
 }
 
 /// A trait representing a yield curve with discount factor calculations.
 ///
 /// The trait is generic over the type of Floating point values (`V`) and the day count convention (`D`).
-pub trait YieldCurve<V: Float + FromPrimitive, D: DayCount>: private::YieldCurveInner<V> {
-    /// Calculates the settlement date.
+pub struct YieldCurve<V: Float + FromPrimitive, D: DayCount, I: Interpolator<V>> {
+    _phantom: PhantomData<V>,
+    settlement_date: Date,
+    day_count: D,
+    interpolator: I,
+}
+
+impl<V: Float + FromPrimitive, D: DayCount, I: Interpolator<V>> YieldCurve<V, D, I> {
+    /// Creates a new instance of the `QLab` struct.
     ///
-    /// The settlement date is the date on which a financial transaction is executed and when
-    /// the transfer of ownership takes place.
+    /// # Arguments
+    ///
+    /// * `settlement_date` - The settlement date of the instrument.
+    /// * `maturities` - A slice of maturity dates.
+    /// * `spot_yields` - A vector of spot yields.
+    /// * `day_count` - The day count convention to use.
+    /// * `interpolator` - An interpolator for fitting the yields.
     ///
     /// # Returns
     ///
-    /// - The settlement date as a `Date` object.
-    fn settlement_date(&self) -> Date;
-    /// Returns a reference to the count fraction of the day.
+    /// A `QLabResult` containing the new instance of `QLab`, or an error if the inputs are invalid.
     ///
-    /// The count fraction of the day is a value that represents the fraction of a day
-    /// that has passed from the beginning of the day until the current time.
-    /// This method returns a reference to the count fraction.
-    ///
-    /// # Return
-    ///
-    /// A reference to the count fraction of the day.
-    fn day_count_fraction(&self) -> &D;
-
+    /// # Errors
+    /// Returns an `Err` variant if the lengths of `maturities` and `spot_yields` do not match.
+    pub fn new(
+        settlement_date: Date,
+        maturities: &[Date],
+        spot_yields: &[V],
+        day_count: D,
+        mut interpolator: I,
+    ) -> QLabResult<Self> {
+        if maturities.len() != spot_yields.len() {
+            return Err(
+                InvalidInput("maturities and spot_yields are different lengths".into()).into(),
+            );
+        }
+        let maturities: Vec<_> = maturities
+            .iter()
+            .map(|maturity| day_count.calculate_day_count_fraction(settlement_date, *maturity))
+            .collect::<Result<Vec<V>, _>>()?;
+        interpolator.fit(&maturities, spot_yields)?;
+        Ok(Self {
+            _phantom: PhantomData,
+            settlement_date,
+            day_count,
+            interpolator,
+        })
+    }
     /// Calculates the discount factor between two dates.
     ///
     /// This function calculates the discount factor between two dates, `d1` and `d2`.
@@ -62,33 +92,36 @@ pub trait YieldCurve<V: Float + FromPrimitive, D: DayCount>: private::YieldCurve
     ///
     /// # Errors
     /// An Error returns if invalid inputs are passed
-    fn discount_factor(&self, d1: Date, d2: Date) -> QLabResult<V> {
+    pub fn discount_factor(&self, d1: Date, d2: Date) -> QLabResult<V> {
         if d2 < d1 {
             return Err(
                 InvalidInput(format!("d1: {d1} must be smaller than d2: {d2}").into()).into(),
             );
         }
-        if d1 < self.settlement_date() || d2 < self.settlement_date() {
+        if d1 < self.settlement_date || d2 < self.settlement_date {
             return Err(InvalidInput(
                 format!(
                     "Either {d1} or {d2} exceeds settlement date: {:?}",
-                    self.settlement_date()
+                    self.settlement_date
                 )
                 .into(),
             )
             .into());
         }
         let t2 = self
-            .day_count_fraction()
-            .calculate_day_count_fraction(self.settlement_date(), d2)?;
+            .day_count
+            .calculate_day_count_fraction(self.settlement_date, d2)?;
         let y2 = self.yield_curve(t2)?;
-        if d1 == self.settlement_date() {
+        if d1 == self.settlement_date {
             return Ok((-t2 * y2).exp());
         }
         let t1 = self
-            .day_count_fraction()
-            .calculate_day_count_fraction(self.settlement_date(), d1)?;
+            .day_count
+            .calculate_day_count_fraction(self.settlement_date, d1)?;
         let y1 = self.yield_curve(t1)?;
         Ok((t1 * y1 - t2 * y2).exp())
+    }
+    fn yield_curve(&self, t: V) -> QLabResult<V> {
+        self.interpolator.value(t)
     }
 }

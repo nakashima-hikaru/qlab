@@ -15,6 +15,7 @@ qlab-error = { workspace = true }
 qlab-time = { workspace = true }
 qlab-termstructure = { workspace = true }
 qlab-instrument = { workspace = true }
+qlab-math = { workspace = true }
 
 [lints]
 workspace = true

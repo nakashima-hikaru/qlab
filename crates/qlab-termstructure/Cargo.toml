@@ -11,9 +11,10 @@ readme = "../../README.md"
 description = "Term structure objects for the qlab"
 
 [dependencies]
-num-traits = "0.2.17"
+num-traits = { workspace = true }
 qlab-time = { workspace = true }
 qlab-error = { workspace = true }
+qlab-math = { workspace = true }
 
 [lints]
 workspace = true

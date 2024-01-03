@@ -11,10 +11,11 @@ readme = "../../README.md"
 description = "Market instruments for the qlab"
 
 [dependencies]
-num-traits = "0.2.17"
+num-traits = { workspace = true }
 qlab-time = { workspace = true }
 qlab-termstructure = { workspace = true }
 qlab-error = { workspace = true }
+qlab-math = { workspace = true }
 
 [lints]
 workspace = true
