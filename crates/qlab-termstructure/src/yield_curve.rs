@@ -22,14 +22,14 @@ mod private {
 /// A trait representing a yield curve with discount factor calculations.
 ///
 /// The trait is generic over the type of Floating point values (`V`) and the day count convention (`D`).
-pub struct YieldCurve<V: Float + FromPrimitive, D: DayCount, I: Interpolator<V>> {
-    _phantom: PhantomData<V>,
+pub struct YieldCurve<D: DayCount, V: Float + FromPrimitive, I: Interpolator<V>> {
     settlement_date: Date,
-    day_count: D,
     interpolator: I,
+    _phantom: PhantomData<V>,
+    _day_count: PhantomData<D>,
 }
 
-impl<V: Float + FromPrimitive, D: DayCount, I: Interpolator<V>> YieldCurve<V, D, I> {
+impl<V: Float + FromPrimitive, D: DayCount, I: Interpolator<V>> YieldCurve<D, V, I> {
     /// Creates a new instance of the `QLab` struct.
     ///
     /// # Arguments
@@ -50,7 +50,6 @@ impl<V: Float + FromPrimitive, D: DayCount, I: Interpolator<V>> YieldCurve<V, D,
         settlement_date: Date,
         maturities: &[Date],
         spot_yields: &[V],
-        day_count: D,
         mut interpolator: I,
     ) -> QLabResult<Self> {
         if maturities.len() != spot_yields.len() {
@@ -60,13 +59,13 @@ impl<V: Float + FromPrimitive, D: DayCount, I: Interpolator<V>> YieldCurve<V, D,
         }
         let maturities: Vec<_> = maturities
             .iter()
-            .map(|maturity| day_count.calculate_day_count_fraction(settlement_date, *maturity))
+            .map(|maturity| D::calculate_day_count_fraction(settlement_date, *maturity))
             .collect::<Result<Vec<V>, _>>()?;
         interpolator.fit(&maturities, spot_yields)?;
         Ok(Self {
             _phantom: PhantomData,
             settlement_date,
-            day_count,
+            _day_count: PhantomData,
             interpolator,
         })
     }
@@ -108,16 +107,12 @@ impl<V: Float + FromPrimitive, D: DayCount, I: Interpolator<V>> YieldCurve<V, D,
             )
             .into());
         }
-        let t2 = self
-            .day_count
-            .calculate_day_count_fraction(self.settlement_date, d2)?;
+        let t2 = D::calculate_day_count_fraction(self.settlement_date, d2)?;
         let y2 = self.yield_curve(t2)?;
         if d1 == self.settlement_date {
             return Ok((-t2 * y2).exp());
         }
-        let t1 = self
-            .day_count
-            .calculate_day_count_fraction(self.settlement_date, d1)?;
+        let t1 = D::calculate_day_count_fraction(self.settlement_date, d1)?;
         let y1 = self.yield_curve(t1)?;
         Ok((t1 * y1 - t2 * y2).exp())
     }

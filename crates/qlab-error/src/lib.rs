@@ -40,8 +40,6 @@ impl Display for ErrString {
 pub enum QLabError {
     #[error(transparent)]
     ComputeError(#[from] ComputeError),
-    // #[error(transparent)]
-    // InvalidInput(ErrString),
 }
 
 #[derive(Debug, Error)]

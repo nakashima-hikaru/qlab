@@ -80,6 +80,34 @@ impl<V: Float + FromPrimitive + MulAssign<V> + AddAssign<V>> Bond<V> {
             });
             regular_due_date = regular_due_date.add_months(months_in_regular_coupon_period)?;
         }
+        Self::first_cash_flow(
+            issue_date,
+            first_coupon_date,
+            months_in_regular_coupon_period,
+            regular_coupon_payment,
+            &mut bond_cash_flows,
+        )?;
+        let final_cash_flow = Self::final_cash_flow(
+            penultimate_coupon_date,
+            maturity_date,
+            face_value,
+            months_in_regular_coupon_period,
+            regular_coupon_payment,
+        )?;
+        bond_cash_flows.push(final_cash_flow);
+        Some(Self {
+            bond_id: bond_id.to_string(),
+            bond_cash_flows,
+        })
+    }
+
+    fn first_cash_flow(
+        issue_date: Date,
+        first_coupon_date: Date,
+        months_in_regular_coupon_period: Months,
+        regular_coupon_payment: V,
+        bond_cash_flows: &mut [BondCashFlow<V>],
+    ) -> Option<()> {
         let first_prior = first_coupon_date.sub_months(months_in_regular_coupon_period)?;
         match first_prior.cmp(&issue_date) {
             Ordering::Less => {
@@ -95,6 +123,16 @@ impl<V: Float + FromPrimitive + MulAssign<V> + AddAssign<V>> Bond<V> {
             }
             Ordering::Equal => {}
         }
+        Some(())
+    }
+
+    fn final_cash_flow(
+        penultimate_coupon_date: Date,
+        maturity_date: Date,
+        face_value: V,
+        months_in_regular_coupon_period: Months,
+        regular_coupon_payment: V,
+    ) -> Option<BondCashFlow<V>> {
         let mut final_coupon = regular_coupon_payment;
         let maturity_regular_date =
             penultimate_coupon_date.add_months(months_in_regular_coupon_period)?;
@@ -113,14 +151,10 @@ impl<V: Float + FromPrimitive + MulAssign<V> + AddAssign<V>> Bond<V> {
             }
             Ordering::Equal => {}
         }
-        bond_cash_flows.push(BondCashFlow {
+        Some(BondCashFlow {
             due_date: maturity_date,
             payment_date: maturity_date,
             payment_amount: face_value + final_coupon,
-        });
-        Some(Self {
-            bond_id: bond_id.to_string(),
-            bond_cash_flows,
         })
     }
     /// Calculates the discounted value of the bond's cash flows.
@@ -147,7 +181,7 @@ impl<V: Float + FromPrimitive + MulAssign<V> + AddAssign<V>> Bond<V> {
     pub fn discounted_value<D: DayCount, I: Interpolator<V>>(
         &self,
         bond_settle_date: Date,
-        yield_curve: &YieldCurve<V, D, I>,
+        yield_curve: &YieldCurve<D, V, I>,
     ) -> QLabResult<V> {
         let mut pv = V::zero();
         for i in 0..self.bond_cash_flows.len() {

@@ -27,7 +27,6 @@ pub trait DayCount {
     /// # Errors
     /// An error occurs if a cast from `V` to a primitive type fails.
     fn calculate_day_count_fraction<V: Float + FromPrimitive>(
-        &self,
         date1: Date,
         date2: Date,
     ) -> QLabResult<V>;

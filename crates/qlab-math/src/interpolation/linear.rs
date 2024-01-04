@@ -63,3 +63,60 @@ impl<V: Float + Debug> Interpolator<V> for Linear<V> {
                 * (t - self.points[idx - 1].x))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::interpolation::Point;
+    use qlab_error::QLabError;
+
+    #[test]
+    fn linear_new() {
+        let linear: Linear<f64> = Linear::new();
+        assert_eq!(linear.points.len(), 0);
+    }
+
+    #[test]
+    fn set_points() {
+        let mut linear: Linear<f64> = Linear::new();
+        linear.set_points(&[Point { x: 1.0, y: 2.0 }, Point { x: 3.0, y: 4.0 }]);
+        assert_eq!(linear.points.len(), 2);
+    }
+
+    #[test]
+    fn value_no_points() {
+        let linear: Linear<f64> = Linear::new();
+        if let Err(QLabError::ComputeError(InvalidInput(_e))) = linear.value(1.0) {
+            {}
+        } else {
+            panic!()
+        }
+    }
+
+    #[test]
+    fn value_small_t() {
+        let mut linear: Linear<f64> = Linear::new();
+        linear.set_points(&[Point { x: 2.0, y: 3.0 }]);
+        if let Err(QLabError::ComputeError(InvalidInput(_e))) = linear.value(1.0) {
+            {}
+        } else {
+            panic!()
+        }
+    }
+}
+
+#[test]
+fn value_large_t() {
+    let mut linear: Linear<f64> = Linear::new();
+    linear.set_points(&[Point { x: 1.0, y: 2.0 }, Point { x: 3.0, y: 4.0 }]);
+    let result = linear.value(5.0);
+    assert!(f64::abs(result.unwrap() - 4.0f64) < f64::epsilon());
+}
+
+#[test]
+fn value_interpolate() {
+    let mut linear: Linear<f64> = Linear::new();
+    linear.set_points(&[Point { x: 1.0, y: 2.0 }, Point { x: 3.0, y: 4.0 }]);
+    let result = linear.value(2.0);
+    assert!(f64::abs(result.unwrap() - 3.0f64) < f64::epsilon());
+}
