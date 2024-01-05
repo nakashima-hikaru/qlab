@@ -4,7 +4,7 @@ use num_traits::{Float, FromPrimitive};
 use qlab_error::{ComputeError, QLabResult};
 
 #[derive(Debug)]
-pub struct Act360 {}
+pub struct Act360;
 
 impl DayCount for Act360 {
     fn calculate_day_count_fraction<V: Float + FromPrimitive>(

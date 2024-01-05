@@ -5,7 +5,7 @@ use qlab_error::ComputeError::InvalidInput;
 use qlab_error::{ComputeError, QLabResult};
 
 #[derive(Debug)]
-pub struct Thirty360 {}
+pub struct Thirty360;
 
 impl Thirty360 {
     #[allow(clippy::cast_sign_loss)] // validation deals with it
