@@ -1,6 +1,6 @@
 use num_traits::{Float, FromPrimitive};
 use qlab_error::QLabResult;
-use qlab_math::interpolation::Interpolator;
+use qlab_math::interpolation::Method;
 use qlab_termstructure::yield_curve::YieldCurve;
 use qlab_time::date::Date;
 use qlab_time::day_count::DayCount;
@@ -178,7 +178,7 @@ impl<V: Float + FromPrimitive + MulAssign<V> + AddAssign<V>> Bond<V> {
     ///
     /// # Errors
     /// Error occurs if a discount factor calculation fails
-    pub fn discounted_value<D: DayCount, I: Interpolator<V>>(
+    pub fn discounted_value<D: DayCount, I: Method<V>>(
         &self,
         bond_settle_date: Date,
         yield_curve: &YieldCurve<D, V, I>,

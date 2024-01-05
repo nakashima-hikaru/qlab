@@ -1,35 +1,22 @@
 use num_traits::{Float, FromPrimitive};
 use qlab_error::ComputeError::InvalidInput;
 use qlab_error::QLabResult;
-use qlab_math::interpolation::Interpolator;
+use qlab_math::interpolation::Method;
 use qlab_time::date::Date;
 use qlab_time::day_count::DayCount;
 use std::marker::PhantomData;
 
-mod private {
-    use num_traits::{Float, FromPrimitive};
-    use qlab_error::QLabResult;
-    use qlab_math::interpolation::Interpolator;
-
-    pub trait YieldCurveInner<V: Float + FromPrimitive, I: Interpolator<V>> {
-        fn interpolator(&self) -> &I;
-        fn yield_curve(&self, t: V) -> QLabResult<V> {
-            self.interpolator().value(t)
-        }
-    }
-}
-
 /// A trait representing a yield curve with discount factor calculations.
 ///
 /// The trait is generic over the type of Floating point values (`V`) and the day count convention (`D`).
-pub struct YieldCurve<D: DayCount, V: Float + FromPrimitive, I: Interpolator<V>> {
+pub struct YieldCurve<D: DayCount, V: Float + FromPrimitive, I: Method<V>> {
     settlement_date: Date,
     interpolator: I,
     _phantom: PhantomData<V>,
     _day_count: PhantomData<D>,
 }
 
-impl<V: Float + FromPrimitive, D: DayCount, I: Interpolator<V>> YieldCurve<D, V, I> {
+impl<V: Float + FromPrimitive, D: DayCount, I: Method<V>> YieldCurve<D, V, I> {
     /// Creates a new instance of the `QLab` struct.
     ///
     /// # Arguments
@@ -118,5 +105,45 @@ impl<V: Float + FromPrimitive, D: DayCount, I: Interpolator<V>> YieldCurve<D, V,
     }
     fn yield_curve(&self, t: V) -> QLabResult<V> {
         self.interpolator.value(t)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use qlab_time::day_count::act_365::Act365;
+
+    #[derive(Default)]
+    struct Flat(f64);
+
+    impl Method<f64> for Flat {
+        fn fit(&mut self, _x: &[f64], _y: &[f64]) -> QLabResult<()> {
+            Ok(())
+        }
+
+        fn value(&self, _t: f64) -> QLabResult<f64> {
+            Ok(self.0)
+        }
+    }
+
+    #[test]
+    fn test_discount_factor() {
+        let settlement_date = Date::from_ymd_opt(2022, 12, 31).unwrap();
+        let maturities = vec![Date::from_ymd_opt(2022, 12, 31).unwrap()];
+        let spot_yields = vec![0.02]; // 2% yield
+        let interpolator = Flat(0.0);
+
+        let yield_curve = YieldCurve::<Act365, _, _>::new(
+            settlement_date,
+            &maturities,
+            &spot_yields,
+            interpolator,
+        )
+        .unwrap();
+
+        let d1 = Date::from_ymd_opt(2023, 1, 1).unwrap();
+        let d2 = Date::from_ymd_opt(2023, 12, 31).unwrap();
+        let discount_factor = yield_curve.discount_factor(d1, d2).unwrap();
+        assert!((discount_factor - 1.0).abs() < f64::EPSILON);
     }
 }

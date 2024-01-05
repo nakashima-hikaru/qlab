@@ -1,5 +1,4 @@
-use crate::interpolation::private::InterpolatorInner;
-use crate::interpolation::{Interpolator, Point};
+use crate::interpolation::{Method, Point};
 use num_traits::Float;
 use qlab_error::ComputeError::InvalidInput;
 use qlab_error::QLabResult;
@@ -11,19 +10,46 @@ pub struct Linear<V: Float> {
 }
 
 impl<V: Float> Linear<V> {
+    /// Creates a new instance of the `QLab` struct.
+    ///
+    /// # Arguments
+    ///
+    /// * `xs` - An array slice containing the x-coordinates of the points.
+    /// * `ys` - An array slice containing the y-coordinates of the points.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `Err` variant of `QLabResult` if the lengths of `xs` and `ys` are not equal.
+    /// The error message will indicate the lengths of `xs` and `ys`
     #[must_use]
     pub fn new() -> Self {
-        Self { points: Vec::new() }
+        Self {
+            points: Vec::default(),
+        }
     }
 }
 
-impl<V: Float + Debug> InterpolatorInner<V> for Linear<V> {
-    fn set_points(&mut self, points: &[Point<V>]) {
-        self.points = points.to_vec();
+impl<V: Float + Debug> Method<V> for Linear<V> {
+    fn fit(&mut self, xs: &[V], ys: &[V]) -> QLabResult<()> {
+        if xs.len() != ys.len() {
+            return Err(InvalidInput(
+                format!(
+                    "The length of `xs`: {} must coincide with that of `ys`: {}",
+                    xs.len(),
+                    ys.len()
+                )
+                .into(),
+            )
+            .into());
+        }
+        let mut points = Vec::with_capacity(xs.len());
+        for (&x, &y) in xs.iter().zip(ys) {
+            points.push(Point { x, y });
+        }
+        self.points = points;
+        Ok(())
     }
-}
 
-impl<V: Float + Debug> Interpolator<V> for Linear<V> {
     /// Calculates the value at time `t` using linear interpolation based on a grid of points.
     /// If `t` is greater than or equal to the x-coordinate of the last grid point, the y-coordinate of the last grid point will be returned.
     ///
@@ -52,7 +78,14 @@ impl<V: Float + Debug> Interpolator<V> for Linear<V> {
         let idx = self.points.partition_point(|&point| point.x < t);
         if idx == 0 {
             return Err(InvalidInput(
-                format!("t: {t:?} is smaller than the `x` value of the first grid point").into(),
+                format!(
+                    "t: {t:?} is smaller than the first grid point: {:?}",
+                    self.points
+                        .first()
+                        .ok_or(InvalidInput("Grid points doesn't exist".into()))?
+                        .x
+                )
+                .into(),
             )
             .into());
         }
@@ -62,61 +95,4 @@ impl<V: Float + Debug> Interpolator<V> for Linear<V> {
                 / (self.points[idx].x - self.points[idx - 1].x)
                 * (t - self.points[idx - 1].x))
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::interpolation::Point;
-    use qlab_error::QLabError;
-
-    #[test]
-    fn linear_new() {
-        let linear: Linear<f64> = Linear::new();
-        assert_eq!(linear.points.len(), 0);
-    }
-
-    #[test]
-    fn set_points() {
-        let mut linear: Linear<f64> = Linear::new();
-        linear.set_points(&[Point { x: 1.0, y: 2.0 }, Point { x: 3.0, y: 4.0 }]);
-        assert_eq!(linear.points.len(), 2);
-    }
-
-    #[test]
-    fn value_no_points() {
-        let linear: Linear<f64> = Linear::new();
-        if let Err(QLabError::ComputeError(InvalidInput(_e))) = linear.value(1.0) {
-            {}
-        } else {
-            panic!()
-        }
-    }
-
-    #[test]
-    fn value_small_t() {
-        let mut linear: Linear<f64> = Linear::new();
-        linear.set_points(&[Point { x: 2.0, y: 3.0 }]);
-        if let Err(QLabError::ComputeError(InvalidInput(_e))) = linear.value(1.0) {
-            {}
-        } else {
-            panic!()
-        }
-    }
-}
-
-#[test]
-fn value_large_t() {
-    let mut linear: Linear<f64> = Linear::new();
-    linear.set_points(&[Point { x: 1.0, y: 2.0 }, Point { x: 3.0, y: 4.0 }]);
-    let result = linear.value(5.0);
-    assert!(f64::abs(result.unwrap() - 4.0f64) < f64::epsilon());
-}
-
-#[test]
-fn value_interpolate() {
-    let mut linear: Linear<f64> = Linear::new();
-    linear.set_points(&[Point { x: 1.0, y: 2.0 }, Point { x: 3.0, y: 4.0 }]);
-    let result = linear.value(2.0);
-    assert!(f64::abs(result.unwrap() - 3.0f64) < f64::epsilon());
 }

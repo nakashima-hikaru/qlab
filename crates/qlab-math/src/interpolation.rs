@@ -1,55 +1,44 @@
 use num_traits::Float;
-use qlab_error::ComputeError::InvalidInput;
 use qlab_error::QLabResult;
 
 pub mod linear;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub(crate) struct Point<V: Float> {
     x: V,
     y: V,
 }
 
-mod private {
-    use crate::interpolation::Point;
-    use num_traits::Float;
+// pub struct InterpolationData<V: Float> {
+//     points: Vec<Point<V>>,
+// }
 
-    pub(crate) trait InterpolatorInner<V: Float> {
-        fn set_points(&mut self, points: &[Point<V>]);
-    }
-}
+// impl<V: Float> InterpolationData<V> {
+//     pub(crate) fn new(points: &[Point<V>]) -> Self {
+//         Self { points: points.to_vec() }
+//     }
+//
+//     pub(crate) fn value(method: &impl InterpolationMethod<V>, x: V) -> QLabResult<V> {
+//         method.value(x)
+//     }
+// }
 
 #[allow(private_bounds)]
-pub trait Interpolator<V: Float>: private::InterpolatorInner<V> {
-    /// Fits the given data points to the `QLab` object.
+pub trait Method<V: Float> {
+    /// Fits the model to the given data points.
+    ///
+    /// This function adjusts the parameters of the model to minimize the difference
+    /// between the predicted values and the actual values.
     ///
     /// # Arguments
     ///
-    /// * `xs` - An array slice containing the x-values of the data points.
-    /// * `ys` - An array slice containing the y-values of the data points.
+    /// * `x` - The input data points. It should be an array of type `V`.
+    /// * `y` - The output data points. It should be an array of type `V`.
     ///
     /// # Errors
     ///
-    /// Returns an `Err` variant if the lengths of `xs` and `ys` do not match.
-    fn fit(&mut self, xs: &[V], ys: &[V]) -> QLabResult<()> {
-        if xs.len() != ys.len() {
-            return Err(InvalidInput(
-                format!(
-                    "The length `xs`: {} must coincide with that of `ys`: {}",
-                    xs.len(),
-                    ys.len()
-                )
-                .into(),
-            )
-            .into());
-        }
-        let mut points = Vec::with_capacity(xs.len());
-        for (&x, &y) in xs.iter().zip(ys) {
-            points.push(Point { x, y });
-        }
-        self.set_points(points.as_ref());
-        Ok(())
-    }
+    /// Returns an error if the fitting process fails.
+    fn fit(&mut self, x: &[V], y: &[V]) -> QLabResult<()>;
 
     /// Returns the value of type `V` and wraps it in a `QLabResult`.
     ///
