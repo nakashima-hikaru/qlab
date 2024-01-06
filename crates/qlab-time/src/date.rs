@@ -1,3 +1,4 @@
+use crate::period::Period;
 use chrono::{Datelike, NaiveDate};
 use std::fmt;
 use std::fmt::{Debug, Formatter};
@@ -21,21 +22,21 @@ impl Date {
     ///
     /// An `Option<Self>` which is `Some(Self)` if the given year, month, and day
     /// correspond to a valid date, and `None` otherwise.
-    pub fn from_ymd_opt(year: i32, month: u32, day: u32) -> Option<Self> {
+    pub fn from_ymd(year: i32, month: u32, day: u32) -> Option<Self> {
         NaiveDate::from_ymd_opt(year, month, day).map(std::convert::Into::into)
     }
-    const fn days_in_month(month: u32, leap_year: bool) -> u32 {
+    const fn days_in_month(month: u32, leap_year: bool) -> Option<u32> {
         match month {
-            1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
-            4 | 6 | 9 | 11 => 30,
+            1 | 3 | 5 | 7 | 8 | 10 | 12 => Some(31),
+            4 | 6 | 9 | 11 => Some(30),
             2 => {
                 if leap_year {
-                    29
+                    Some(29)
                 } else {
-                    28
+                    Some(28)
                 }
             }
-            _ => panic!("out of range"),
+            _ => None,
         }
     }
 
@@ -45,6 +46,7 @@ impl Date {
     ///
     /// Returns `true` if the year is a leap year, `false` otherwise.
     #[must_use]
+    #[inline]
     pub const fn leap_year(self) -> bool {
         self.0.leap_year()
     }
@@ -64,7 +66,7 @@ impl Date {
     /// The new date, wrapped in `Some`, if it is valid.
     /// `None` if the resulting date is not valid.
     #[must_use]
-    pub fn add_years(self, rhs_years: i32) -> Option<Self> {
+    pub fn checked_add_years(self, rhs_years: i32) -> Option<Self> {
         if let Some(date) = self.0.with_year(self.0.year() + rhs_years) {
             Some(date.into())
         } else {
@@ -87,12 +89,12 @@ impl Date {
     /// * `Some(Self)` - The resulting datetime after adding the months.
     /// * `None` - If the operation could not be performed.
     #[must_use]
-    pub fn add_months(self, rhs_months: crate::months::Months) -> Option<Self> {
+    pub fn checked_add_months(self, rhs_months: crate::period::months::Months) -> Option<Self> {
         if let Some(date) = self.0.checked_add_months(chrono::Months::new(rhs_months.0)) {
             Some(date.into())
         } else {
             self.0
-                .with_day(Self::days_in_month(self.month(), self.leap_year()))
+                .with_day(Self::days_in_month(self.month(), self.leap_year())?)
                 .and_then(|date| {
                     date.checked_add_months(chrono::Months::new(rhs_months.0))
                         .map(std::convert::Into::into)
@@ -108,12 +110,12 @@ impl Date {
     ///
     /// * `rhs_months` - The number of months to subtract.
     #[must_use]
-    pub fn sub_months(self, rhs_months: crate::months::Months) -> Option<Self> {
+    pub fn checked_sub_months(self, rhs_months: crate::period::months::Months) -> Option<Self> {
         if let Some(date) = self.0.checked_sub_months(chrono::Months::new(rhs_months.0)) {
             Some(date.into())
         } else {
             self.0
-                .with_day(Self::days_in_month(self.month(), self.leap_year()))
+                .with_day(Self::days_in_month(self.month(), self.leap_year())?)
                 .and_then(|date| {
                     date.checked_sub_months(chrono::Months::new(rhs_months.0))
                         .map(std::convert::Into::into)
@@ -131,7 +133,7 @@ impl Date {
     /// Returns `Some(Self)` if the addition is successful, where `Self` is the type of the current date.
     /// Returns `None` if the addition results in an overflow or underflow.
     #[must_use]
-    pub fn add_days(self, rhs_days: crate::days::Days) -> Option<Self> {
+    pub fn checked_add_days(self, rhs_days: crate::period::days::Days) -> Option<Self> {
         self.0
             .checked_add_days(chrono::Days::new(rhs_days.0))
             .map(std::convert::Into::into)
@@ -147,18 +149,20 @@ impl Date {
     /// Returns an option containing the new value if subtraction operation is successful,
     /// otherwise returns `None`.
     #[must_use]
-    pub fn sub_days(self, rhs_days: crate::days::Days) -> Option<Self> {
+    pub fn checked_sub_days(self, rhs_days: crate::period::days::Days) -> Option<Self> {
         self.0
             .checked_sub_days(chrono::Days::new(rhs_days.0))
             .map(std::convert::Into::into)
     }
     /// Returns the year stored in the corresponding `Date` object.
     #[must_use]
+    #[inline]
     pub fn year(&self) -> i32 {
         self.0.year()
     }
     /// Returns the month component of the given value.
     #[must_use]
+    #[inline]
     pub fn month(&self) -> u32 {
         self.0.month()
     }
@@ -168,6 +172,7 @@ impl Date {
     ///
     /// The day of the month as a `u32` value.
     #[must_use]
+    #[inline]
     pub fn day(&self) -> u32 {
         self.0.day()
     }
@@ -179,6 +184,7 @@ impl Date {
     ///
     /// The serial date of the object as an `i32` value.
     #[must_use]
+    #[inline]
     pub fn serial_date(&self) -> i32 {
         self.0.num_days_from_ce()
     }
@@ -196,10 +202,10 @@ impl Date {
         let original_month = self.0.month();
         let weekday = self.0.weekday();
         if weekday as u32 > 4 {
-            return self.add_days(crate::days::Days::new(7 - weekday as u64));
+            return self.checked_add_days(crate::period::days::Days::new(7 - weekday as u64));
         }
         if original_month < self.0.month() || (original_month == 12 && self.0.month() == 1) {
-            return self.sub_days(crate::days::Days::new(3));
+            return self.checked_sub_days(crate::period::days::Days::new(3));
         }
         Some(self)
     }
@@ -225,6 +231,12 @@ impl fmt::Display for Date {
     }
 }
 
+impl Date {
+    fn checked_add(self, period: impl Period) -> Option<Date> {
+        period.checked_add(self)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::Date;
@@ -232,7 +244,7 @@ mod tests {
 
     #[test]
     fn test_from_ymd_opt_valid_date() {
-        let result = Date::from_ymd_opt(2023, 8, 15);
+        let result = Date::from_ymd(2023, 8, 15);
         assert!(result.is_some());
         let result_date = result.unwrap();
         assert_eq!(2023, result_date.year());
@@ -242,56 +254,55 @@ mod tests {
 
     #[test]
     fn test_from_ymd_opt_invalid_year() {
-        let result = Date::from_ymd_opt(2023, 2, 29);
+        let result = Date::from_ymd(2023, 2, 29);
         assert!(result.is_none());
     }
 
     #[test]
     fn test_days_in_month_february() {
-        assert_eq!(Date::days_in_month(2, true), 29);
-        assert_eq!(Date::days_in_month(2, false), 28);
+        assert_eq!(Date::days_in_month(2, true).unwrap(), 29);
+        assert_eq!(Date::days_in_month(2, false).unwrap(), 28);
     }
 
     #[test]
     fn test_days_in_month_april() {
-        assert_eq!(Date::days_in_month(4, true), 30);
-        assert_eq!(Date::days_in_month(4, false), 30);
+        assert_eq!(Date::days_in_month(4, true).unwrap(), 30);
+        assert_eq!(Date::days_in_month(4, false).unwrap(), 30);
     }
 
     #[test]
     fn test_days_in_month_january() {
-        assert_eq!(Date::days_in_month(1, true), 31);
-        assert_eq!(Date::days_in_month(1, false), 31);
-        assert_eq!(Date::days_in_month(2, true), 29);
-        assert_eq!(Date::days_in_month(2, false), 28);
+        assert_eq!(Date::days_in_month(1, true).unwrap(), 31);
+        assert_eq!(Date::days_in_month(1, false).unwrap(), 31);
+        assert_eq!(Date::days_in_month(2, true).unwrap(), 29);
+        assert_eq!(Date::days_in_month(2, false).unwrap(), 28);
     }
 
     #[test]
-    #[should_panic(expected = "out of range")]
     fn test_days_in_month_out_of_range() {
-        Date::days_in_month(13, false);
+        assert!(Date::days_in_month(13, false).is_none());
     }
 
     #[test]
     fn test_leap_year() {
-        let date = Date::from_ymd_opt(2023, 12, 27).unwrap();
+        let date = Date::from_ymd(2023, 12, 27).unwrap();
         assert!(!date.leap_year());
 
-        let date = Date::from_ymd_opt(2024, 12, 27).unwrap();
+        let date = Date::from_ymd(2024, 12, 27).unwrap();
         assert!(date.leap_year());
     }
 
     #[test]
     fn test_add_years() {
-        let date = Date::from_ymd_opt(2023, 12, 31).unwrap();
-        let result = date.add_years(1);
+        let date = Date::from_ymd(2023, 12, 31).unwrap();
+        let result = date.checked_add_years(1);
         assert!(result.is_some());
         let new_date = result.unwrap();
         assert_eq!(2024, new_date.year());
         assert_eq!(12, new_date.month());
         assert_eq!(31, new_date.day());
-        let date = Date::from_ymd_opt(2024, 2, 29).unwrap();
-        let result = date.add_years(1);
+        let date = Date::from_ymd(2024, 2, 29).unwrap();
+        let result = date.checked_add_years(1);
         let new_date = result.unwrap();
         assert_eq!(2025, new_date.year());
         assert_eq!(2, new_date.month());
@@ -300,8 +311,8 @@ mod tests {
 
     #[test]
     fn test_add_months() {
-        let date = Date::from_ymd_opt(2023, 12, 31).unwrap();
-        let result = date.add_months(crate::months::Months::new(2));
+        let date = Date::from_ymd(2023, 12, 31).unwrap();
+        let result = date.checked_add_months(crate::period::months::Months::new(2));
         assert!(result.is_some());
         let new_date = result.unwrap();
         assert_eq!(2024, new_date.year());
@@ -311,8 +322,8 @@ mod tests {
 
     #[test]
     fn test_sub_months() {
-        let date = Date::from_ymd_opt(2023, 2, 1).unwrap();
-        let result = date.sub_months(crate::months::Months::new(2));
+        let date = Date::from_ymd(2023, 2, 1).unwrap();
+        let result = date.checked_sub_months(crate::period::months::Months::new(2));
         assert!(result.is_some());
         let new_date = result.unwrap();
         assert_eq!(2022, new_date.year());
@@ -322,8 +333,8 @@ mod tests {
 
     #[test]
     fn test_add_days() {
-        let date = Date::from_ymd_opt(2023, 2, 28).unwrap();
-        let result = date.add_days(crate::days::Days::new(2));
+        let date = Date::from_ymd(2023, 2, 28).unwrap();
+        let result = date.checked_add_days(crate::period::days::Days::new(2));
         assert!(result.is_some());
         let new_date = result.unwrap();
         assert_eq!(2023, new_date.year());
@@ -333,8 +344,8 @@ mod tests {
 
     #[test]
     fn test_sub_days() {
-        let date = Date::from_ymd_opt(2023, 3, 1).unwrap();
-        let result = date.sub_days(crate::days::Days::new(2));
+        let date = Date::from_ymd(2023, 3, 1).unwrap();
+        let result = date.checked_sub_days(crate::period::days::Days::new(2));
         assert!(result.is_some());
         let new_date = result.unwrap();
         assert_eq!(2023, new_date.year());
@@ -344,13 +355,13 @@ mod tests {
 
     #[test]
     fn test_serial_date() {
-        let date = Date::from_ymd_opt(2023, 3, 1).unwrap();
+        let date = Date::from_ymd(2023, 3, 1).unwrap();
         assert_eq!(date.serial_date(), 738_580);
     }
 
     #[test]
     fn test_weekend_roll() {
-        let date = Date::from_ymd_opt(2023, 3, 5).unwrap();
+        let date = Date::from_ymd(2023, 3, 5).unwrap();
         assert_eq!(date.0.weekday(), Weekday::Sun);
         let result = date.weekend_roll();
         assert!(result.is_some());
@@ -359,7 +370,7 @@ mod tests {
         assert_eq!(3, new_date.month());
         assert_eq!(6, new_date.day());
 
-        let date = Date::from_ymd_opt(2023, 3, 4).unwrap();
+        let date = Date::from_ymd(2023, 3, 4).unwrap();
         assert_eq!(date.0.weekday(), Weekday::Sat);
         let result = date.weekend_roll();
         assert!(result.is_some());

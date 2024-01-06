@@ -32,8 +32,8 @@ mod tests {
 
     #[test]
     fn test_calculate_day_count_fraction() {
-        let date1 = Date::from_ymd_opt(2023, 1, 1).unwrap();
-        let date2 = Date::from_ymd_opt(2023, 12, 31).unwrap();
+        let date1 = Date::from_ymd(2023, 1, 1).unwrap();
+        let date2 = Date::from_ymd(2023, 12, 31).unwrap();
         let diff: f64 = Act365::calculate_day_count_fraction(date1, date2).unwrap();
         assert!((diff - 0.99726).abs() < 0.001);
     }

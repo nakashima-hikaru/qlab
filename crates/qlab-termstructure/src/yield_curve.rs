@@ -128,8 +128,8 @@ mod tests {
 
     #[test]
     fn test_discount_factor() {
-        let settlement_date = Date::from_ymd_opt(2022, 12, 31).unwrap();
-        let maturities = vec![Date::from_ymd_opt(2022, 12, 31).unwrap()];
+        let settlement_date = Date::from_ymd(2022, 12, 31).unwrap();
+        let maturities = vec![Date::from_ymd(2022, 12, 31).unwrap()];
         let spot_yields = vec![0.02]; // 2% yield
         let interpolator = Flat(0.0);
 
@@ -141,8 +141,8 @@ mod tests {
         )
         .unwrap();
 
-        let d1 = Date::from_ymd_opt(2023, 1, 1).unwrap();
-        let d2 = Date::from_ymd_opt(2023, 12, 31).unwrap();
+        let d1 = Date::from_ymd(2023, 1, 1).unwrap();
+        let d2 = Date::from_ymd(2023, 12, 31).unwrap();
         let discount_factor = yield_curve.discount_factor(d1, d2).unwrap();
         assert!((discount_factor - 1.0).abs() < f64::EPSILON);
     }

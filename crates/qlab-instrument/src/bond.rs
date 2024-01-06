@@ -5,7 +5,7 @@ use qlab_termstructure::yield_curve::YieldCurve;
 use qlab_time::date::Date;
 use qlab_time::day_count::DayCount;
 use qlab_time::frequency::Frequency;
-use qlab_time::months::Months;
+use qlab_time::period::months::Months;
 use std::cmp::Ordering;
 use std::ops::{AddAssign, MulAssign};
 
@@ -78,7 +78,8 @@ impl<V: Float + FromPrimitive + MulAssign<V> + AddAssign<V>> Bond<V> {
                 payment_date,
                 payment_amount: regular_coupon_payment,
             });
-            regular_due_date = regular_due_date.add_months(months_in_regular_coupon_period)?;
+            regular_due_date =
+                regular_due_date.checked_add_months(months_in_regular_coupon_period)?;
         }
         Self::first_cash_flow(
             issue_date,
@@ -108,7 +109,7 @@ impl<V: Float + FromPrimitive + MulAssign<V> + AddAssign<V>> Bond<V> {
         regular_coupon_payment: V,
         bond_cash_flows: &mut [BondCashFlow<V>],
     ) -> Option<()> {
-        let first_prior = first_coupon_date.sub_months(months_in_regular_coupon_period)?;
+        let first_prior = first_coupon_date.checked_sub_months(months_in_regular_coupon_period)?;
         match first_prior.cmp(&issue_date) {
             Ordering::Less => {
                 let coupon_fraction = V::from_i32(first_coupon_date - issue_date)?
@@ -116,7 +117,8 @@ impl<V: Float + FromPrimitive + MulAssign<V> + AddAssign<V>> Bond<V> {
                 bond_cash_flows[0].payment_amount *= coupon_fraction;
             }
             Ordering::Greater => {
-                let second_prior = first_prior.sub_months(months_in_regular_coupon_period)?;
+                let second_prior =
+                    first_prior.checked_sub_months(months_in_regular_coupon_period)?;
                 let coupon_fraction = V::from_i32(first_prior - issue_date)?
                     / V::from_i32(first_prior - second_prior)?;
                 bond_cash_flows[0].payment_amount += coupon_fraction * regular_coupon_payment;
@@ -135,7 +137,7 @@ impl<V: Float + FromPrimitive + MulAssign<V> + AddAssign<V>> Bond<V> {
     ) -> Option<BondCashFlow<V>> {
         let mut final_coupon = regular_coupon_payment;
         let maturity_regular_date =
-            penultimate_coupon_date.add_months(months_in_regular_coupon_period)?;
+            penultimate_coupon_date.checked_add_months(months_in_regular_coupon_period)?;
         match maturity_date.cmp(&maturity_regular_date) {
             Ordering::Less => {
                 let coupon_fraction = V::from_i32(maturity_date - penultimate_coupon_date)?
@@ -144,7 +146,7 @@ impl<V: Float + FromPrimitive + MulAssign<V> + AddAssign<V>> Bond<V> {
             }
             Ordering::Greater => {
                 let next_regular_date =
-                    maturity_regular_date.add_months(months_in_regular_coupon_period)?;
+                    maturity_regular_date.checked_add_months(months_in_regular_coupon_period)?;
                 let extra_coupon_fraction = V::from_i32(maturity_date - maturity_regular_date)?
                     / V::from_i32(next_regular_date - maturity_regular_date)?;
                 final_coupon += extra_coupon_fraction * regular_coupon_payment;
