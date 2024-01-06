@@ -9,20 +9,6 @@ pub(crate) struct Point<V: Float> {
     y: V,
 }
 
-// pub struct InterpolationData<V: Float> {
-//     points: Vec<Point<V>>,
-// }
-
-// impl<V: Float> InterpolationData<V> {
-//     pub(crate) fn new(points: &[Point<V>]) -> Self {
-//         Self { points: points.to_vec() }
-//     }
-//
-//     pub(crate) fn value(method: &impl InterpolationMethod<V>, x: V) -> QLabResult<V> {
-//         method.value(x)
-//     }
-// }
-
 #[allow(private_bounds)]
 pub trait Method<V: Float> {
     /// Fits the model to the given data points.

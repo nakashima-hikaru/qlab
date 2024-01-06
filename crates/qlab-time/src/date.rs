@@ -1,3 +1,5 @@
+use crate::business_day_convention::DateRolling;
+use crate::calendar::Calendar;
 use crate::period::Period;
 use chrono::{Datelike, NaiveDate};
 use std::fmt;
@@ -6,7 +8,7 @@ use std::ops::Sub;
 
 /// Represents a date.
 #[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Copy, Clone, Debug)]
-pub struct Date(NaiveDate);
+pub struct Date(pub(crate) NaiveDate);
 
 impl Date {
     /// Converts the given year, month, and day into a `NaiveDate` and
@@ -154,6 +156,23 @@ impl Date {
             .checked_sub_days(chrono::Days::new(rhs_days.0))
             .map(std::convert::Into::into)
     }
+    /// Makes a new `NaiveDate` for the next calendar date.
+    ///
+    /// Returns `None` when `self` is the last representable date.
+    #[inline]
+    #[must_use]
+    pub fn succ_opt(&self) -> Option<Date> {
+        self.0.succ_opt().map(Date)
+    }
+    /// Makes a new `NaiveDate` for the previous calendar date.
+    ///
+    /// Returns `None` when `self` is the first representable date.
+    #[inline]
+    #[must_use]
+    pub fn pred_opt(&self) -> Option<Date> {
+        self.0.pred_opt().map(Date)
+    }
+
     /// Returns the year stored in the corresponding `Date` object.
     #[must_use]
     #[inline]
@@ -234,6 +253,47 @@ impl fmt::Display for Date {
 impl Date {
     fn checked_add(self, period: impl Period) -> Option<Date> {
         period.checked_add(self)
+    }
+
+    pub fn checked_roll(
+        self,
+        period: impl Period,
+        calendar: &impl Calendar,
+        rolling: DateRolling,
+    ) -> Option<Self> {
+        match rolling {
+            DateRolling::Unadjusted => self.checked_add(period),
+            DateRolling::Following => {
+                let mut ret = self.checked_roll(period, calendar, DateRolling::Unadjusted)?;
+                while !calendar.is_business_day(ret) {
+                    ret = ret.succ_opt()?;
+                }
+                Some(ret)
+            }
+            DateRolling::ModifiedFollowing => {
+                let ret = self.checked_roll(period, calendar, DateRolling::Following)?;
+                if ret.month() == self.month() {
+                    Some(ret)
+                } else {
+                    self.checked_roll(period, calendar, DateRolling::Preceding)
+                }
+            }
+            DateRolling::Preceding => {
+                let mut ret = self.checked_roll(period, calendar, DateRolling::Unadjusted)?;
+                while !calendar.is_business_day(ret) {
+                    ret = ret.pred_opt()?;
+                }
+                Some(ret)
+            }
+            DateRolling::ModifiedPreceding => {
+                let ret = self.checked_roll(period, calendar, DateRolling::Preceding)?;
+                if ret.month() == self.month() {
+                    Some(ret)
+                } else {
+                    self.checked_roll(period, calendar, DateRolling::Following)
+                }
+            }
+        }
     }
 }
 

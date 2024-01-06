@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "crates/*",
+    "third-parties/*"
 ]
 
 [workspace.package]
@@ -21,6 +22,7 @@ qlab-time = { version = "0.1.0", path = "crates/qlab-time", default-features = f
 qlab-termstructure = { version = "0.1.0", path = "crates/qlab-termstructure", default-features = false }
 qlab-instrument = { version = "0.1.0", path = "crates/qlab-instrument", default-features = false }
 qlab-math = { version = "0.1.0", path = "crates/qlab-math", default-features = false }
+calendar = { version = "0.1.0", path = "third-parties/calendar", default-features = false }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

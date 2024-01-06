@@ -14,6 +14,7 @@ description = "Time related code for the qlab"
 qlab-error = { workspace = true }
 chrono = "0.4.31"
 num-traits = { workspace = true }
+calendar = { workspace = true }
 
 [lints]
 workspace = true
