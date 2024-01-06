@@ -1,0 +1,15 @@
+[package]
+name = "calendar"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+readme = "../../README.md"
+description = "Time related code for the qlab"
+license-file = "LICENSE"
+
+[dependencies]
+chrono = "0.4.31"
+num-traits = { workspace = true }
