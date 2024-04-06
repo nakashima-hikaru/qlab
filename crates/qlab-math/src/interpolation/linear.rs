@@ -4,6 +4,27 @@ use qlab_error::ComputeError::InvalidInput;
 use qlab_error::QLabResult;
 use std::fmt::Debug;
 
+/// A linear data structure that stores a collection of points.
+///
+/// # Type Parameters
+///
+/// - `V`: The type of values in the points.
+///
+/// # Examples
+///
+/// ```
+/// use num_traits::Float;
+/// use qlab_math::interpolation::linear::Linear;
+/// use qlab_math::interpolation::Method;
+///
+/// let mut linear: Linear<f32> = Linear::default();
+///
+/// let xs = [1.0, 3.0];
+/// let ys = [2.0, 4.0];
+/// linear.fit(&xs, &ys).unwrap();
+/// assert_eq!(linear.value(2.0).unwrap(), 3.0);
+///
+/// ```
 #[derive(Default)]
 pub struct Linear<V: Float> {
     points: Vec<Point<V>>,

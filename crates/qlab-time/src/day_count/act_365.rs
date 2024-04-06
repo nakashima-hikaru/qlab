@@ -17,9 +17,7 @@ impl DayCount for Act365 {
         ))?;
         let denomination =
             V::from_i32(365).ok_or(ComputeError::CastNumberError(format!("{}", 365).into()))?;
-        if denomination.eq(&V::zero()) {
-            return Err(ComputeError::ZeroDivisionError.into());
-        }
+
         Ok(date_diff.div(denomination))
     }
 }
