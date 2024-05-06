@@ -161,7 +161,7 @@ impl Date {
     /// Returns `None` when `self` is the last representable date.
     #[inline]
     #[must_use]
-    pub fn succ_opt(&self) -> Option<Date> {
+    pub fn succ_opt(self) -> Option<Date> {
         self.0.succ_opt().map(Date)
     }
     /// Makes a new `NaiveDate` for the previous calendar date.
@@ -169,7 +169,7 @@ impl Date {
     /// Returns `None` when `self` is the first representable date.
     #[inline]
     #[must_use]
-    pub fn pred_opt(&self) -> Option<Date> {
+    pub fn pred_opt(self) -> Option<Date> {
         self.0.pred_opt().map(Date)
     }
 
@@ -192,7 +192,7 @@ impl Date {
     /// The day of the month as a `u32` value.
     #[must_use]
     #[inline]
-    pub fn day(&self) -> u32 {
+    pub fn day(self) -> u32 {
         self.0.day()
     }
     /// Retrieves the serial date of the given object.
@@ -204,7 +204,7 @@ impl Date {
     /// The serial date of the object as an `i32` value.
     #[must_use]
     #[inline]
-    pub fn serial_date(&self) -> i32 {
+    pub fn serial_date(self) -> i32 {
         self.0.num_days_from_ce()
     }
     /// Returns an optional `Self`value.
