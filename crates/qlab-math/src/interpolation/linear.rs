@@ -80,7 +80,7 @@ impl<V: Float + Debug> Method<V> for Linear<V> {
         let last_point = self
             .points
             .last()
-            .ok_or(InvalidInput("Grid points doesn't exist".into()))?;
+            .ok_or_else(|| InvalidInput("Grid points doesn't exist".into()))?;
 
         if t >= last_point.x {
             return Ok(last_point.y);
@@ -92,7 +92,7 @@ impl<V: Float + Debug> Method<V> for Linear<V> {
                     "t: {t:?} is smaller than the first grid point: {:?}",
                     self.points
                         .first()
-                        .ok_or(InvalidInput("Grid points doesn't exist".into()))?
+                        .ok_or_else(|| InvalidInput("Grid points doesn't exist".into()))?
                         .x
                 )
                 .into(),

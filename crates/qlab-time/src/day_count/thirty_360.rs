@@ -31,8 +31,9 @@ impl DayCount for Thirty360 {
     ) -> QLabResult<V> {
         let date_diff = Self::date_diff(date1, date2)?;
         let date_diff = V::from_u32(date_diff)
-            .ok_or(ComputeError::CastNumberError(format!("{date_diff}").into()))?;
-        let denomination = V::from_i32(360).ok_or(ComputeError::CastNumberError("360".into()))?;
+            .ok_or_else(|| ComputeError::CastNumberError(format!("{date_diff}").into()))?;
+        let denomination =
+            V::from_i32(360).ok_or_else(|| ComputeError::CastNumberError("360".into()))?;
         Ok(date_diff.div(denomination))
     }
 }

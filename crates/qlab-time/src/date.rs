@@ -69,14 +69,15 @@ impl Date {
     /// `None` if the resulting date is not valid.
     #[must_use]
     pub fn checked_add_years(self, rhs_years: i32) -> Option<Self> {
-        if let Some(date) = self.0.with_year(self.0.year() + rhs_years) {
-            Some(date.into())
-        } else {
-            self.0.with_day(28).and_then(|date| {
-                date.with_year(self.0.year() + rhs_years)
-                    .map(std::convert::Into::into)
-            })
-        }
+        self.0.with_year(self.0.year() + rhs_years).map_or_else(
+            || {
+                self.0.with_day(28).and_then(|date| {
+                    date.with_year(self.0.year() + rhs_years)
+                        .map(std::convert::Into::into)
+                })
+            },
+            |date| Some(date.into()),
+        )
     }
     /// Adds the specified number of months to the datetime.
     ///
@@ -161,7 +162,7 @@ impl Date {
     /// Returns `None` when `self` is the last representable date.
     #[inline]
     #[must_use]
-    pub fn succ_opt(self) -> Option<Date> {
+    pub fn succ_opt(self) -> Option<Self> {
         self.0.succ_opt().map(Date)
     }
     /// Makes a new `NaiveDate` for the previous calendar date.
@@ -169,7 +170,7 @@ impl Date {
     /// Returns `None` when `self` is the first representable date.
     #[inline]
     #[must_use]
-    pub fn pred_opt(self) -> Option<Date> {
+    pub fn pred_opt(self) -> Option<Self> {
         self.0.pred_opt().map(Date)
     }
 
@@ -251,7 +252,7 @@ impl fmt::Display for Date {
 }
 
 impl Date {
-    fn checked_add(self, period: impl Period) -> Option<Date> {
+    fn checked_add(self, period: impl Period) -> Option<Self> {
         period.checked_add(self)
     }
 

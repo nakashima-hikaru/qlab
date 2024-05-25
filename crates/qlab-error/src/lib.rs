@@ -12,7 +12,7 @@ where
     T: Into<Cow<'static, str>>,
 {
     fn from(msg: T) -> Self {
-        ErrString(msg.into())
+        Self(msg.into())
     }
 }
 

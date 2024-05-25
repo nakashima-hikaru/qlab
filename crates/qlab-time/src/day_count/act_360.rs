@@ -11,11 +11,10 @@ impl DayCount for Act360 {
         date1: Date,
         date2: Date,
     ) -> QLabResult<V> {
-        let date_diff = V::from_i32(date2 - date1).ok_or(ComputeError::CastNumberError(
-            format!("{}", date2 - date1).into(),
-        ))?;
-        let denomination =
-            V::from_i32(360).ok_or(ComputeError::CastNumberError(format!("{}", 360).into()))?;
+        let date_diff = V::from_i32(date2 - date1)
+            .ok_or_else(|| ComputeError::CastNumberError(format!("{}", date2 - date1).into()))?;
+        let denomination = V::from_i32(360)
+            .ok_or_else(|| ComputeError::CastNumberError(format!("{}", 360).into()))?;
 
         Ok(date_diff.div(denomination))
     }
