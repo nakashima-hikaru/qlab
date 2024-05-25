@@ -24,7 +24,7 @@ pub trait Method<V: Float> {
     /// # Errors
     ///
     /// Returns an error if the fitting process fails.
-    fn fit(&mut self, x: &[V], y: &[V]) -> QLabResult<()>;
+    fn fit(&mut self, xs_and_ys: &[(V, V)]) -> QLabResult<()>;
 
     /// Returns the value of type `V` and wraps it in a `QLabResult`.
     ///

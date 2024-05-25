@@ -19,9 +19,9 @@ use std::fmt::Debug;
 ///
 /// let mut linear: Linear<f32> = Linear::default();
 ///
-/// let xs = [1.0, 3.0];
-/// let ys = [2.0, 4.0];
-/// linear.fit(&xs, &ys).unwrap();
+/// let xs_and_ys: [(f32, f32); 2] = [(1.0_f32, 2.0_f32), (3.0_f32, 4.0_f32)];
+///
+/// linear.fit(&xs_and_ys).unwrap();
 /// assert_eq!(linear.value(2.0).unwrap(), 3.0);
 ///
 /// ```
@@ -51,20 +51,9 @@ impl<V: Float> Linear<V> {
 }
 
 impl<V: Float + Debug> Method<V> for Linear<V> {
-    fn fit(&mut self, xs: &[V], ys: &[V]) -> QLabResult<()> {
-        if xs.len() != ys.len() {
-            return Err(InvalidInput(
-                format!(
-                    "The length of `xs`: {} must coincide with that of `ys`: {}",
-                    xs.len(),
-                    ys.len()
-                )
-                .into(),
-            )
-            .into());
-        }
-        let mut points = Vec::with_capacity(xs.len());
-        for (&x, &y) in xs.iter().zip(ys) {
+    fn fit(&mut self, xs_and_ys: &[(V, V)]) -> QLabResult<()> {
+        let mut points = Vec::with_capacity(xs_and_ys.len());
+        for &(x, y) in xs_and_ys {
             points.push(Point { x, y });
         }
         self.points = points;

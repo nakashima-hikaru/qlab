@@ -48,7 +48,12 @@ impl<V: Float + FromPrimitive, D: DayCount, I: Method<V>> YieldCurve<D, V, I> {
             .iter()
             .map(|maturity| D::calculate_day_count_fraction(settlement_date, *maturity))
             .collect::<Result<Vec<V>, _>>()?;
-        interpolator.fit(&maturities, spot_yields)?;
+        let val: Vec<_> = maturities
+            .iter()
+            .copied()
+            .zip(spot_yields.iter().copied())
+            .collect();
+        interpolator.fit(&val)?;
         Ok(Self {
             _phantom: PhantomData,
             settlement_date,
@@ -117,7 +122,7 @@ mod tests {
     struct Flat(f64);
 
     impl Method<f64> for Flat {
-        fn fit(&mut self, _x: &[f64], _y: &[f64]) -> QLabResult<()> {
+        fn fit(&mut self, _x_and_y: &[(f64, f64)]) -> QLabResult<()> {
             Ok(())
         }
 
