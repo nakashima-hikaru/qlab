@@ -3,8 +3,8 @@ pub mod act_365;
 pub mod thirty_360;
 
 use crate::date::Date;
-use num_traits::{real::Real, FromPrimitive};
 use qlab_error::QLabResult;
+use qlab_math::value::Value;
 
 pub trait DayCount {
     /// Calculates the day count fraction between two dates.
@@ -26,8 +26,5 @@ pub trait DayCount {
     ///
     /// # Errors
     /// An error occurs if a cast from `V` to a primitive type fails.
-    fn calculate_day_count_fraction<V: Real + FromPrimitive>(
-        date1: Date,
-        date2: Date,
-    ) -> QLabResult<V>;
+    fn calculate_day_count_fraction<V: Value>(date1: Date, date2: Date) -> QLabResult<V>;
 }

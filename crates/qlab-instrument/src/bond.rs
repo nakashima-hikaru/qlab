@@ -1,14 +1,12 @@
-use num_traits::real::Real;
-use num_traits::FromPrimitive;
 use qlab_error::QLabResult;
-use qlab_math::interpolation::Method;
+use qlab_math::interpolation::Interpolator;
+use qlab_math::value::Value;
 use qlab_termstructure::yield_curve::YieldCurve;
 use qlab_time::date::Date;
 use qlab_time::day_count::DayCount;
 use qlab_time::frequency::Frequency;
 use qlab_time::period::months::Months;
 use std::cmp::Ordering;
-use std::ops::{AddAssign, MulAssign};
 
 struct BondCashFlow<V> {
     due_date: Date,
@@ -31,7 +29,7 @@ pub struct Bond<V> {
     bond_cash_flows: Vec<BondCashFlow<V>>,
 }
 
-impl<V: Real + FromPrimitive + MulAssign<V> + AddAssign<V>> Bond<V> {
+impl<V: Value> Bond<V> {
     /// Creates a new bond with the given parameters.
     ///
     /// This function calculates the cash flows for the bond based on the provided parameters.
@@ -181,7 +179,7 @@ impl<V: Real + FromPrimitive + MulAssign<V> + AddAssign<V>> Bond<V> {
     ///
     /// # Errors
     /// Error occurs if a discount factor calculation fails
-    pub fn discounted_value<D: DayCount, I: Method<V>>(
+    pub fn discounted_value<D: DayCount, I: Interpolator<V>>(
         &self,
         bond_settle_date: Date,
         yield_curve: &YieldCurve<D, V, I>,

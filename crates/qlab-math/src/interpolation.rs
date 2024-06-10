@@ -1,16 +1,16 @@
-use num_traits::real::Real;
-use qlab_error::QLabResult;
+use crate::value::Value;
+use qlab_error::InterpolationError;
 
 pub mod linear;
 pub mod spline;
 
 #[derive(Copy, Clone, Debug)]
-pub(crate) struct Point<V: Real> {
+pub(crate) struct Point<V> {
     x: V,
     y: V,
 }
 
-pub trait Method<V: Real> {
+pub trait Interpolator<V: Value> {
     /// Fits the model to the given data points.
     ///
     /// This function adjusts the parameters of the model to minimize the difference
@@ -24,7 +24,7 @@ pub trait Method<V: Real> {
     /// # Errors
     ///
     /// Returns an error if the fitting process fails.
-    fn try_fit(&mut self, xs_and_ys: &[(V, V)]) -> QLabResult<()>;
+    fn try_fit(&mut self, xs_and_ys: &[(V, V)]) -> Result<(), InterpolationError<V>>;
 
     /// Returns the value of type `V` and wraps it in a `QLabResult`.
     ///
@@ -39,5 +39,5 @@ pub trait Method<V: Real> {
     /// # Errors
     ///
     /// An Error returns if interpolation fails.
-    fn try_value(&self, t: V) -> QLabResult<V>;
+    fn try_value(&self, t: V) -> Result<V, InterpolationError<V>>;
 }

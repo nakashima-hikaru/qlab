@@ -1,18 +1,18 @@
-use crate::interpolation::spline::InterpolationValue;
+use crate::value::Value;
 
 #[derive(Debug)]
 pub enum MatrixValidationError {
     MatrixShapeError,
 }
 
-pub(crate) struct TridiagonalMatrix<V: InterpolationValue> {
+pub(crate) struct TridiagonalMatrix<V: Value> {
     upper_diagonal: Vec<V>,
     diagonal: Vec<V>,
     lower_diagonal: Vec<V>,
     size: usize,
 }
 
-impl<V: InterpolationValue> TridiagonalMatrix<V> {
+impl<V: Value> TridiagonalMatrix<V> {
     pub fn try_new(
         upper_diagonal: Vec<V>,
         diagonal: Vec<V>,
@@ -44,7 +44,7 @@ impl<V: InterpolationValue> TridiagonalMatrix<V> {
     }
 }
 
-fn solve_with_thomas_algorithm_unchecked<V: InterpolationValue>(
+fn solve_with_thomas_algorithm_unchecked<V: Value>(
     matrix_size: usize,
     lower_diagonal: &[V],
     diagonal: &[V],

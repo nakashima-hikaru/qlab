@@ -1,8 +1,8 @@
-use crate::interpolation::spline::HermiteSplineError;
-use crate::interpolation::spline::InterpolationValue;
+use crate::interpolation::spline::Value;
 use nalgebra::Matrix4;
 use nalgebra::Vector4;
 use num_traits::Zero;
+use qlab_error::InterpolationError;
 
 struct Point3<V> {
     pub x: V,
@@ -10,12 +10,12 @@ struct Point3<V> {
     pub dydx: V,
 }
 
-pub struct Hermite<V: InterpolationValue> {
+pub struct Hermite<V: Value> {
     points: Vec<Point3<V>>,
     m: Matrix4<V>,
 }
 
-impl<V: InterpolationValue> Hermite<V> {
+impl<V: Value> Hermite<V> {
     /// Creates a new instance of `HermiteSpline` from a slice of raw points.
     ///
     /// # Arguments
@@ -36,14 +36,14 @@ impl<V: InterpolationValue> Hermite<V> {
     ///
     /// # Panics
     /// Will panic if `V` fail to cast constants.
-    pub fn try_new(raw_points: &[(V, V, V)]) -> Result<Self, HermiteSplineError<V>> {
+    pub fn try_new(raw_points: &[(V, V, V)]) -> Result<Self, InterpolationError<V>> {
         let mut temp = raw_points[0].0;
 
         let mut points = Vec::new();
         for &(x, y, dydx) in raw_points {
             let point = Point3 { x, y, dydx };
             if point.x < temp {
-                return Err(HermiteSplineError::PointOrderError);
+                return Err(InterpolationError::PointOrderError);
             }
             temp = point.x;
             points.push(point);
@@ -87,7 +87,7 @@ impl<V: InterpolationValue> Hermite<V> {
     ///
     /// # Panics
     /// Will panic if partial comparison of points fail.
-    pub fn try_value(&self, x: V) -> Result<V, HermiteSplineError<V>> {
+    pub fn try_value(&self, x: V) -> Result<V, InterpolationError<V>> {
         match self
             .points
             .binary_search_by(|point| point.x.partial_cmp(&x).unwrap())
@@ -95,10 +95,10 @@ impl<V: InterpolationValue> Hermite<V> {
             Ok(pos) => Ok(self.points[pos].y),
             Err(pos) => {
                 if pos.is_zero() {
-                    return Err(HermiteSplineError::OutOfLowerBound(x));
+                    return Err(InterpolationError::OutOfLowerBound(x));
                 }
                 if pos > self.points.len() {
-                    return Err(HermiteSplineError::OutOfUpperBound(x));
+                    return Err(InterpolationError::OutOfUpperBound(x));
                 }
                 let pos = pos - 1;
                 let point = &self.points[pos];

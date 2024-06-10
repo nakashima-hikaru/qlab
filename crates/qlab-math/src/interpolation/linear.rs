@@ -1,8 +1,7 @@
-use crate::interpolation::{Method, Point};
+use crate::interpolation::{Interpolator, Point};
+use crate::value::Value;
 use num_traits::real::Real;
-use qlab_error::ComputeError::InvalidInput;
-use qlab_error::QLabResult;
-use std::fmt::Debug;
+use qlab_error::InterpolationError;
 
 /// A linear data structure that stores a collection of points.
 ///
@@ -13,9 +12,8 @@ use std::fmt::Debug;
 /// # Examples
 ///
 /// ```
-/// use num_traits::real::Real;
 /// use qlab_math::interpolation::linear::Linear;
-/// use qlab_math::interpolation::Method;
+/// use qlab_math::interpolation::Interpolator;
 ///
 /// let mut linear: Linear<f32> = Linear::default();
 ///
@@ -26,7 +24,7 @@ use std::fmt::Debug;
 ///
 /// ```
 #[derive(Default)]
-pub struct Linear<V: Real> {
+pub struct Linear<V> {
     points: Vec<Point<V>>,
 }
 
@@ -50,10 +48,10 @@ impl<V: Real> Linear<V> {
     }
 }
 
-impl<V: Real + Debug> Method<V> for Linear<V> {
-    fn try_fit(&mut self, xs_and_ys: &[(V, V)]) -> QLabResult<()> {
-        let mut points = Vec::with_capacity(xs_and_ys.len());
-        for &(x, y) in xs_and_ys {
+impl<V: Value> Interpolator<V> for Linear<V> {
+    fn try_fit(&mut self, raw_points: &[(V, V)]) -> Result<(), InterpolationError<V>> {
+        let mut points = Vec::with_capacity(raw_points.len());
+        for &(x, y) in raw_points {
             points.push(Point { x, y });
         }
         self.points = points;
@@ -76,28 +74,20 @@ impl<V: Real + Debug> Method<V> for Linear<V> {
     /// # Errors
     ///
     /// * `InvalidInput` - Represents an error when the input is invalid or out-of-bounds.
-    fn try_value(&self, t: V) -> QLabResult<V> {
+    fn try_value(&self, t: V) -> Result<V, InterpolationError<V>> {
         let last_point = self
             .points
             .last()
-            .ok_or_else(|| InvalidInput("Grid points doesn't exist".into()))?;
+            .ok_or(InterpolationError::InsufficientPointsError(
+                self.points.len(),
+            ))?;
 
         if t >= last_point.x {
             return Ok(last_point.y);
         }
         let idx = self.points.partition_point(|&point| point.x < t);
         if idx == 0 {
-            return Err(InvalidInput(
-                format!(
-                    "t: {t:?} is smaller than the first grid point: {:?}",
-                    self.points
-                        .first()
-                        .ok_or_else(|| InvalidInput("Grid points doesn't exist".into()))?
-                        .x
-                )
-                .into(),
-            )
-            .into());
+            return Err(InterpolationError::OutOfLowerBound(t));
         }
 
         Ok(self.points[idx - 1].y

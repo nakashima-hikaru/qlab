@@ -1,7 +1,7 @@
-use crate::interpolation::spline::HermiteSplineError;
-use crate::interpolation::spline::InterpolationValue;
+use crate::interpolation::spline::Value;
 use nalgebra::{Matrix4, Vector4};
 use num_traits::Zero;
+use qlab_error::InterpolationError;
 use std::ops::Mul;
 
 struct Point2<V> {
@@ -9,11 +9,12 @@ struct Point2<V> {
     pub y: V,
 }
 
-pub struct CatmullRom<V: InterpolationValue> {
+#[derive(Default)]
+pub struct CatmullRom<V: Value> {
     points: Vec<Point2<V>>,
 }
 
-impl<V: InterpolationValue> CatmullRom<V> {
+impl<V: Value> CatmullRom<V> {
     /// Constructs a new `CatmullRomSpline` from a slice of raw points.
     ///
     /// # Arguments
@@ -29,18 +30,9 @@ impl<V: InterpolationValue> CatmullRom<V> {
     /// * `HermiteSplineError::InsufficientPointsError(n)` - If the number of `raw_points` is less than 3, where `n` is the number of `raw_points`.
     /// * `HermiteSplineError::PointOrderError` - If the x-coordinates of the `raw_points` are not in ascending order.
     ///
-    /// # Example
-    ///
-    /// ```
-    /// use qlab_math::interpolation::spline::catmull_rom::CatmullRom;
-    ///
-    /// let raw_points = [(0.0, 0.0), (1.0, 1.0), (2.0, 0.0)];
-    /// let spline = CatmullRom::try_new(&raw_points);
-    /// assert!(spline.is_ok());
-    /// ```
-    pub fn try_new(raw_points: &[(V, V)]) -> Result<Self, HermiteSplineError<V>> {
+    pub fn try_fit(&mut self, raw_points: &[(V, V)]) -> Result<(), InterpolationError<V>> {
         if raw_points.len() < 3 {
-            return Err(HermiteSplineError::InsufficientPointsError(
+            return Err(InterpolationError::InsufficientPointsError(
                 raw_points.len(),
             ));
         }
@@ -49,12 +41,13 @@ impl<V: InterpolationValue> CatmullRom<V> {
         for &(x, y) in raw_points {
             let point = Point2 { x, y };
             if point.x < temp {
-                return Err(HermiteSplineError::PointOrderError);
+                return Err(InterpolationError::PointOrderError);
             }
             temp = point.x;
             points.push(point);
         }
-        Ok(Self { points })
+        self.points = points;
+        Ok(())
     }
     /// Tries to find the value `x` in the Hermite spline.
     ///
@@ -75,7 +68,7 @@ impl<V: InterpolationValue> CatmullRom<V> {
     /// * Will panic if points contains a point which cannot be compared partially.
     /// * Will panic if `V` cannot cast the constant `6`.
     #[allow(clippy::too_many_lines)]
-    pub fn try_value(self, x: V) -> Result<V, HermiteSplineError<V>> {
+    pub fn try_value(self, x: V) -> Result<V, InterpolationError<V>> {
         match self
             .points
             .binary_search_by(|point| point.x.partial_cmp(&x).unwrap())
@@ -83,10 +76,10 @@ impl<V: InterpolationValue> CatmullRom<V> {
             Ok(pos) => Ok(self.points[pos].y),
             Err(pos) => {
                 if pos.is_zero() {
-                    return Err(HermiteSplineError::OutOfLowerBound(x));
+                    return Err(InterpolationError::OutOfLowerBound(x));
                 }
                 if pos > self.points.len() {
-                    return Err(HermiteSplineError::OutOfUpperBound(x));
+                    return Err(InterpolationError::OutOfUpperBound(x));
                 }
                 let pos = pos - 1;
                 let point = &self.points[pos];
@@ -201,7 +194,8 @@ mod tests {
     #[test]
     fn test_f64() {
         let points = [(0.0, 1.0), (0.5, 0.5), (1.0, 0.0)];
-        let interpolator = CatmullRom::try_new(&points).unwrap();
+        let mut interpolator = CatmullRom::default();
+        interpolator.try_fit(&points).unwrap();
         let val = interpolator.try_value(0.75).unwrap();
         assert!((val - 0.270_833_333_333_333_37_f64).abs() < f64::EPSILON);
     }
@@ -214,7 +208,7 @@ mod tests {
             (Decimal::new(5, 1), Decimal::new(5, 1)),
             (Decimal::new(1, 0), Decimal::new(0, 0)),
         ];
-        let interpolator = CatmullRom::try_new(&points).unwrap();
+        let interpolator = CatmullRom::try_fit(&points).unwrap();
         let val = interpolator.try_value(Decimal::new(75, 2)).unwrap();
         assert_eq!(
             val,

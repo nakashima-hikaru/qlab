@@ -11,6 +11,7 @@ readme = "../../README.md"
 description = "Time related code for the qlab"
 
 [dependencies]
+qlab-math = { workspace = true }
 qlab-error = { workspace = true }
 chrono = { workspace = true }
 num-traits = { workspace = true }

@@ -280,6 +280,7 @@ dependencies = [
  "chrono",
  "num-traits",
  "qlab-error",
+ "qlab-math",
 ]
 
 [[package]]

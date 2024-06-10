@@ -1,6 +1,8 @@
-use crate::interpolation::spline::{HermiteSplineError, InterpolationValue};
+use crate::interpolation::spline::Value;
+use crate::interpolation::Interpolator;
 use crate::linear_algebra::tridiagonal_matrix::TridiagonalMatrix;
 use num_traits::Zero;
+use qlab_error::InterpolationError;
 
 struct Point3<V> {
     pub x: V,
@@ -8,11 +10,12 @@ struct Point3<V> {
     pub dydx: V,
 }
 
-pub struct NaturalCubic<V: InterpolationValue> {
+#[derive(Default)]
+pub struct NaturalCubic<V: Value> {
     points: Vec<Point3<V>>,
 }
 
-impl<V: InterpolationValue> NaturalCubic<V> {
+impl<V: Value> Interpolator<V> for NaturalCubic<V> {
     /// Tries to create a new `HermiteSpline` from the given raw points.
     ///
     /// # Arguments
@@ -33,9 +36,9 @@ impl<V: InterpolationValue> NaturalCubic<V> {
     ///
     /// # Panics
     /// Will panic if `V` fail to cast constants.
-    pub fn try_new(raw_points: &[(V, V)]) -> Result<Self, HermiteSplineError<V>> {
+    fn try_fit(&mut self, raw_points: &[(V, V)]) -> Result<(), InterpolationError<V>> {
         if raw_points.len() < 3 {
-            return Err(HermiteSplineError::InsufficientPointsError(
+            return Err(InterpolationError::InsufficientPointsError(
                 raw_points.len(),
             ));
         }
@@ -80,13 +83,15 @@ impl<V: InterpolationValue> NaturalCubic<V> {
         for (&(x, y), dydx) in raw_points.iter().zip(derivatives) {
             let point = Point3 { x, y, dydx };
             if point.x < temp {
-                return Err(HermiteSplineError::PointOrderError);
+                return Err(InterpolationError::PointOrderError);
             }
             temp = point.x;
             points.push(point);
         }
 
-        Ok(Self { points })
+        self.points = points;
+
+        Ok(())
     }
 
     /// Evaluates the Hermite spline at the given value `x`.
@@ -105,27 +110,9 @@ impl<V: InterpolationValue> NaturalCubic<V> {
     ///
     /// # Panics
     /// * Will panic if points contains a point which cannot be compared partially.
-    /// * Will panic if `V` cannot cast the constant `6`.
+    /// * Will panic if `V` cannot cast constants.
     ///
-    /// # Examples
-    ///
-    /// ```rust
-    ///
-    /// use qlab_math::interpolation::spline::HermiteSplineError;
-    /// use qlab_math::interpolation::spline::natural_cubic::NaturalCubic;
-    ///
-    /// let points = vec![
-    ///     (0.0, 0.0),  // (x, y)
-    ///     (1.0, 1.0),
-    ///     (2.0, 0.0),
-    ///     (3.0, -1.0),
-    /// ];
-    ///
-    /// let spline = NaturalCubic::try_new(&points).unwrap();
-    ///
-    /// assert!(spline.try_value(0.5).is_ok());
-    /// ```
-    pub fn try_value(&self, x: V) -> Result<V, HermiteSplineError<V>> {
+    fn try_value(&self, x: V) -> Result<V, InterpolationError<V>> {
         match self
             .points
             .binary_search_by(|point| point.x.partial_cmp(&x).unwrap())
@@ -133,10 +120,10 @@ impl<V: InterpolationValue> NaturalCubic<V> {
             Ok(pos) => Ok(self.points[pos].y),
             Err(pos) => {
                 if pos.is_zero() {
-                    return Err(HermiteSplineError::OutOfLowerBound(x));
+                    return Err(InterpolationError::OutOfLowerBound(x));
                 }
                 if pos > self.points.len() {
-                    return Err(HermiteSplineError::OutOfUpperBound(x));
+                    return Err(InterpolationError::OutOfUpperBound(x));
                 }
                 let pos = pos - 1;
                 let point = &self.points[pos];
@@ -158,13 +145,15 @@ impl<V: InterpolationValue> NaturalCubic<V> {
 #[cfg(test)]
 mod tests {
     use crate::interpolation::spline::natural_cubic::NaturalCubic;
+    use crate::interpolation::Interpolator;
     #[cfg(feature = "decimal")]
     use rust_decimal::Decimal;
 
     #[test]
     fn test_f64() {
         let points = [(0.0, 1.0), (0.5, 0.5), (1.0, 0.0)];
-        let interpolator = NaturalCubic::try_new(&points).unwrap();
+        let mut interpolator = NaturalCubic::default();
+        interpolator.try_fit(&points).unwrap();
         let val = interpolator.try_value(0.75).unwrap();
         assert!((0.25_f64 - val) / 0.25_f64 < f64::EPSILON);
     }
@@ -177,7 +166,7 @@ mod tests {
             (Decimal::new(5, 1), Decimal::new(5, 1)),
             (Decimal::new(1, 0), Decimal::new(0, 0)),
         ];
-        let interpolator = NaturalCubic::try_new(&points).unwrap();
+        let interpolator = NaturalCubic::try_fit(&points).unwrap();
         let val = interpolator.try_value(Decimal::new(75, 2)).unwrap();
         assert_eq!(val, Decimal::from_str_exact("0.25").unwrap());
     }

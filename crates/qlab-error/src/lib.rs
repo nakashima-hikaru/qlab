@@ -50,6 +50,26 @@ pub enum ComputeError {
     CastNumberError(ErrString),
     #[error("Invalid inputs are passed by: {0}")]
     InvalidInput(ErrString),
+    #[error("interpolation failed")]
+    InterpolationError,
+}
+
+#[derive(Error, Debug, PartialEq)]
+pub enum InterpolationError<V> {
+    #[error("points must be sorted")]
+    PointOrderError,
+    #[error("out of lower bound: {0}")]
+    OutOfLowerBound(V),
+    #[error("out of upper bound: {0}")]
+    OutOfUpperBound(V),
+    #[error("length of inputs: {0} is not enough points for construction")]
+    InsufficientPointsError(usize),
+}
+
+impl<T> From<InterpolationError<T>> for QLabError {
+    fn from(_err: InterpolationError<T>) -> Self {
+        Self::ComputeError(ComputeError::InterpolationError)
+    }
 }
 
 pub type QLabResult<T> = Result<T, QLabError>;

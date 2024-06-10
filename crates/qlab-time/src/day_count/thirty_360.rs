@@ -1,8 +1,8 @@
 use crate::date::Date;
 use crate::day_count::DayCount;
-use num_traits::{real::Real, FromPrimitive};
 use qlab_error::ComputeError::InvalidInput;
 use qlab_error::{ComputeError, QLabResult};
+use qlab_math::value::Value;
 
 #[derive(Debug)]
 pub struct Thirty360;
@@ -25,10 +25,7 @@ impl Thirty360 {
 }
 
 impl DayCount for Thirty360 {
-    fn calculate_day_count_fraction<V: Real + FromPrimitive>(
-        date1: Date,
-        date2: Date,
-    ) -> QLabResult<V> {
+    fn calculate_day_count_fraction<V: Value>(date1: Date, date2: Date) -> QLabResult<V> {
         let date_diff = Self::date_diff(date1, date2)?;
         let date_diff = V::from_u32(date_diff)
             .ok_or_else(|| ComputeError::CastNumberError(format!("{date_diff}").into()))?;

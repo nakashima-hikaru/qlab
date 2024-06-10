@@ -1,8 +1,7 @@
-use num_traits::real::Real;
-use num_traits::FromPrimitive;
 use qlab_error::ComputeError::InvalidInput;
 use qlab_error::QLabResult;
-use qlab_math::interpolation::Method;
+use qlab_math::interpolation::Interpolator;
+use qlab_math::value::Value;
 use qlab_time::date::Date;
 use qlab_time::day_count::DayCount;
 use std::marker::PhantomData;
@@ -10,14 +9,14 @@ use std::marker::PhantomData;
 /// A trait representing a yield curve with discount factor calculations.
 ///
 /// The trait is generic over the type of Realing point values (`V`) and the day count convention (`D`).
-pub struct YieldCurve<D: DayCount, V: Real + FromPrimitive, I: Method<V>> {
+pub struct YieldCurve<D: DayCount, V: Value, I: Interpolator<V>> {
     settlement_date: Date,
     interpolator: I,
     _phantom: PhantomData<V>,
     _day_count: PhantomData<D>,
 }
 
-impl<V: Real + FromPrimitive, D: DayCount, I: Method<V>> YieldCurve<D, V, I> {
+impl<V: Value, D: DayCount, I: Interpolator<V>> YieldCurve<D, V, I> {
     /// Creates a new instance of the `QLab` struct.
     ///
     /// # Arguments
@@ -110,24 +109,25 @@ impl<V: Real + FromPrimitive, D: DayCount, I: Method<V>> YieldCurve<D, V, I> {
         Ok((t1 * y1 - t2 * y2).exp())
     }
     fn yield_curve(&self, t: V) -> QLabResult<V> {
-        self.interpolator.try_value(t)
+        Ok(self.interpolator.try_value(t)?)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use qlab_error::InterpolationError;
     use qlab_time::day_count::act_365::Act365;
 
     #[derive(Default)]
     struct Flat(f64);
 
-    impl Method<f64> for Flat {
-        fn try_fit(&mut self, _x_and_y: &[(f64, f64)]) -> QLabResult<()> {
+    impl Interpolator<f64> for Flat {
+        fn try_fit(&mut self, _x_and_y: &[(f64, f64)]) -> Result<(), InterpolationError<f64>> {
             Ok(())
         }
 
-        fn try_value(&self, _t: f64) -> QLabResult<f64> {
+        fn try_value(&self, _t: f64) -> Result<f64, InterpolationError<f64>> {
             Ok(self.0)
         }
     }
