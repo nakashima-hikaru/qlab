@@ -1,7 +1,7 @@
 use crate::business_day_convention::DateRolling;
 use crate::calendar::Calendar;
 use crate::period::Period;
-use chrono::{Datelike, NaiveDate, TimeDelta};
+use chrono::{Datelike, NaiveDate};
 use std::fmt;
 use std::fmt::{Debug, Formatter};
 use std::ops::Sub;
