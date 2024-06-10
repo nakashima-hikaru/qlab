@@ -21,8 +21,8 @@ use std::fmt::Debug;
 ///
 /// let xs_and_ys: [(f32, f32); 2] = [(1.0_f32, 2.0_f32), (3.0_f32, 4.0_f32)];
 ///
-/// linear.fit(&xs_and_ys).unwrap();
-/// assert_eq!(linear.value(2.0).unwrap(), 3.0);
+/// linear.try_fit(&xs_and_ys).unwrap();
+/// assert_eq!(linear.try_value(2.0).unwrap(), 3.0);
 ///
 /// ```
 #[derive(Default)]
@@ -51,7 +51,7 @@ impl<V: Real> Linear<V> {
 }
 
 impl<V: Real + Debug> Method<V> for Linear<V> {
-    fn fit(&mut self, xs_and_ys: &[(V, V)]) -> QLabResult<()> {
+    fn try_fit(&mut self, xs_and_ys: &[(V, V)]) -> QLabResult<()> {
         let mut points = Vec::with_capacity(xs_and_ys.len());
         for &(x, y) in xs_and_ys {
             points.push(Point { x, y });
@@ -76,7 +76,7 @@ impl<V: Real + Debug> Method<V> for Linear<V> {
     /// # Errors
     ///
     /// * `InvalidInput` - Represents an error when the input is invalid or out-of-bounds.
-    fn value(&self, t: V) -> QLabResult<V> {
+    fn try_value(&self, t: V) -> QLabResult<V> {
         let last_point = self
             .points
             .last()

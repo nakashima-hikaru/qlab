@@ -54,7 +54,7 @@ impl<V: Real + FromPrimitive, D: DayCount, I: Method<V>> YieldCurve<D, V, I> {
             .copied()
             .zip(spot_yields.iter().copied())
             .collect();
-        interpolator.fit(&val)?;
+        interpolator.try_fit(&val)?;
         Ok(Self {
             _phantom: PhantomData,
             settlement_date,
@@ -110,7 +110,7 @@ impl<V: Real + FromPrimitive, D: DayCount, I: Method<V>> YieldCurve<D, V, I> {
         Ok((t1 * y1 - t2 * y2).exp())
     }
     fn yield_curve(&self, t: V) -> QLabResult<V> {
-        self.interpolator.value(t)
+        self.interpolator.try_value(t)
     }
 }
 
@@ -123,11 +123,11 @@ mod tests {
     struct Flat(f64);
 
     impl Method<f64> for Flat {
-        fn fit(&mut self, _x_and_y: &[(f64, f64)]) -> QLabResult<()> {
+        fn try_fit(&mut self, _x_and_y: &[(f64, f64)]) -> QLabResult<()> {
             Ok(())
         }
 
-        fn value(&self, _t: f64) -> QLabResult<f64> {
+        fn try_value(&self, _t: f64) -> QLabResult<f64> {
             Ok(self.0)
         }
     }

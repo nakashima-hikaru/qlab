@@ -13,7 +13,7 @@ description = "Error definitions for the qlab"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-thiserror = "1.0.53"
+thiserror = { workspace = true }
 
 [lints]
 workspace = true

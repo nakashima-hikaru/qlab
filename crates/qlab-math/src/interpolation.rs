@@ -2,6 +2,7 @@ use num_traits::real::Real;
 use qlab_error::QLabResult;
 
 pub mod linear;
+pub mod spline;
 
 #[derive(Copy, Clone, Debug)]
 pub(crate) struct Point<V: Real> {
@@ -23,7 +24,7 @@ pub trait Method<V: Real> {
     /// # Errors
     ///
     /// Returns an error if the fitting process fails.
-    fn fit(&mut self, xs_and_ys: &[(V, V)]) -> QLabResult<()>;
+    fn try_fit(&mut self, xs_and_ys: &[(V, V)]) -> QLabResult<()>;
 
     /// Returns the value of type `V` and wraps it in a `QLabResult`.
     ///
@@ -38,5 +39,5 @@ pub trait Method<V: Real> {
     /// # Errors
     ///
     /// An Error returns if interpolation fails.
-    fn value(&self, t: V) -> QLabResult<V>;
+    fn try_value(&self, t: V) -> QLabResult<V>;
 }

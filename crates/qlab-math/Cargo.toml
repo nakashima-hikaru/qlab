@@ -11,9 +11,11 @@ readme = "../../README.md"
 description = "Mathematics related code for the qlab"
 
 [dependencies]
-num-traits = { workspace = true }
 qlab-error = { workspace = true }
-spline-interpolation = { version = "0.1.0", path = "src/interpolation/spline-interpolation", default-features = false }
+num-traits = { workspace = true }
+thiserror = { workspace = true }
+nalgebra = "0.32.5"
 
 [lints]
 workspace = true
+
