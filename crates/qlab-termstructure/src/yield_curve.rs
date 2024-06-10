@@ -1,4 +1,5 @@
-use num_traits::{Float, FromPrimitive};
+use num_traits::real::Real;
+use num_traits::FromPrimitive;
 use qlab_error::ComputeError::InvalidInput;
 use qlab_error::QLabResult;
 use qlab_math::interpolation::Method;
@@ -8,15 +9,15 @@ use std::marker::PhantomData;
 
 /// A trait representing a yield curve with discount factor calculations.
 ///
-/// The trait is generic over the type of Floating point values (`V`) and the day count convention (`D`).
-pub struct YieldCurve<D: DayCount, V: Float + FromPrimitive, I: Method<V>> {
+/// The trait is generic over the type of Realing point values (`V`) and the day count convention (`D`).
+pub struct YieldCurve<D: DayCount, V: Real + FromPrimitive, I: Method<V>> {
     settlement_date: Date,
     interpolator: I,
     _phantom: PhantomData<V>,
     _day_count: PhantomData<D>,
 }
 
-impl<V: Float + FromPrimitive, D: DayCount, I: Method<V>> YieldCurve<D, V, I> {
+impl<V: Real + FromPrimitive, D: DayCount, I: Method<V>> YieldCurve<D, V, I> {
     /// Creates a new instance of the `QLab` struct.
     ///
     /// # Arguments

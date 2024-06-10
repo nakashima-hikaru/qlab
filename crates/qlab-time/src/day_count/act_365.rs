@@ -1,6 +1,6 @@
 use crate::date::Date;
 use crate::day_count::DayCount;
-use num_traits::Float;
+use num_traits::real::Real;
 use num_traits::FromPrimitive;
 use qlab_error::{ComputeError, QLabResult};
 
@@ -8,14 +8,13 @@ use qlab_error::{ComputeError, QLabResult};
 pub struct Act365;
 
 impl DayCount for Act365 {
-    fn calculate_day_count_fraction<V: Float + FromPrimitive>(
+    fn calculate_day_count_fraction<V: Real + FromPrimitive>(
         date1: Date,
         date2: Date,
     ) -> QLabResult<V> {
-        let date_diff = V::from_i32(date2 - date1)
+        let date_diff = V::from_i64(date2 - date1)
             .ok_or_else(|| ComputeError::CastNumberError(format!("{}", date2 - date1).into()))?;
-        let denomination = V::from_i32(365)
-            .ok_or_else(|| ComputeError::CastNumberError(format!("{}", 365).into()))?;
+        let denomination = V::from_i32(365).unwrap();
 
         Ok(date_diff.div(denomination))
     }

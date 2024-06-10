@@ -1,16 +1,15 @@
-use num_traits::Float;
+use num_traits::real::Real;
 use qlab_error::QLabResult;
 
 pub mod linear;
 
 #[derive(Copy, Clone, Debug)]
-pub(crate) struct Point<V: Float> {
+pub(crate) struct Point<V: Real> {
     x: V,
     y: V,
 }
 
-#[allow(private_bounds)]
-pub trait Method<V: Float> {
+pub trait Method<V: Real> {
     /// Fits the model to the given data points.
     ///
     /// This function adjusts the parameters of the model to minimize the difference

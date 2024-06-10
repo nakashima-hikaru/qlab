@@ -1,4 +1,5 @@
-use num_traits::{Float, FromPrimitive};
+use num_traits::real::Real;
+use num_traits::FromPrimitive;
 use qlab_error::QLabResult;
 use qlab_math::interpolation::Method;
 use qlab_termstructure::yield_curve::YieldCurve;
@@ -30,7 +31,7 @@ pub struct Bond<V> {
     bond_cash_flows: Vec<BondCashFlow<V>>,
 }
 
-impl<V: Float + FromPrimitive + MulAssign<V> + AddAssign<V>> Bond<V> {
+impl<V: Real + FromPrimitive + MulAssign<V> + AddAssign<V>> Bond<V> {
     /// Creates a new bond with the given parameters.
     ///
     /// This function calculates the cash flows for the bond based on the provided parameters.
@@ -112,15 +113,15 @@ impl<V: Float + FromPrimitive + MulAssign<V> + AddAssign<V>> Bond<V> {
         let first_prior = first_coupon_date.checked_sub_months(months_in_regular_coupon_period)?;
         match first_prior.cmp(&issue_date) {
             Ordering::Less => {
-                let coupon_fraction = V::from_i32(first_coupon_date - issue_date)?
-                    / V::from_i32(first_coupon_date - first_prior)?;
+                let coupon_fraction = V::from_i64(first_coupon_date - issue_date)?
+                    / V::from_i64(first_coupon_date - first_prior)?;
                 bond_cash_flows[0].payment_amount *= coupon_fraction;
             }
             Ordering::Greater => {
                 let second_prior =
                     first_prior.checked_sub_months(months_in_regular_coupon_period)?;
-                let coupon_fraction = V::from_i32(first_prior - issue_date)?
-                    / V::from_i32(first_prior - second_prior)?;
+                let coupon_fraction = V::from_i64(first_prior - issue_date)?
+                    / V::from_i64(first_prior - second_prior)?;
                 bond_cash_flows[0].payment_amount += coupon_fraction * regular_coupon_payment;
             }
             Ordering::Equal => {}
@@ -140,15 +141,15 @@ impl<V: Float + FromPrimitive + MulAssign<V> + AddAssign<V>> Bond<V> {
             penultimate_coupon_date.checked_add_months(months_in_regular_coupon_period)?;
         match maturity_date.cmp(&maturity_regular_date) {
             Ordering::Less => {
-                let coupon_fraction = V::from_i32(maturity_date - penultimate_coupon_date)?
-                    / V::from_i32(maturity_regular_date - penultimate_coupon_date)?;
+                let coupon_fraction = V::from_i64(maturity_date - penultimate_coupon_date)?
+                    / V::from_i64(maturity_regular_date - penultimate_coupon_date)?;
                 final_coupon *= coupon_fraction;
             }
             Ordering::Greater => {
                 let next_regular_date =
                     maturity_regular_date.checked_add_months(months_in_regular_coupon_period)?;
-                let extra_coupon_fraction = V::from_i32(maturity_date - maturity_regular_date)?
-                    / V::from_i32(next_regular_date - maturity_regular_date)?;
+                let extra_coupon_fraction = V::from_i64(maturity_date - maturity_regular_date)?
+                    / V::from_i64(next_regular_date - maturity_regular_date)?;
                 final_coupon += extra_coupon_fraction * regular_coupon_payment;
             }
             Ordering::Equal => {}

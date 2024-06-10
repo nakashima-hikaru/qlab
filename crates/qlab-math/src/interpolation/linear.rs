@@ -1,5 +1,5 @@
 use crate::interpolation::{Method, Point};
-use num_traits::Float;
+use num_traits::real::Real;
 use qlab_error::ComputeError::InvalidInput;
 use qlab_error::QLabResult;
 use std::fmt::Debug;
@@ -13,7 +13,7 @@ use std::fmt::Debug;
 /// # Examples
 ///
 /// ```
-/// use num_traits::Float;
+/// use num_traits::real::Real;
 /// use qlab_math::interpolation::linear::Linear;
 /// use qlab_math::interpolation::Method;
 ///
@@ -26,11 +26,11 @@ use std::fmt::Debug;
 ///
 /// ```
 #[derive(Default)]
-pub struct Linear<V: Float> {
+pub struct Linear<V: Real> {
     points: Vec<Point<V>>,
 }
 
-impl<V: Float> Linear<V> {
+impl<V: Real> Linear<V> {
     /// Creates a new instance of the `QLab` struct.
     ///
     /// # Arguments
@@ -50,7 +50,7 @@ impl<V: Float> Linear<V> {
     }
 }
 
-impl<V: Float + Debug> Method<V> for Linear<V> {
+impl<V: Real + Debug> Method<V> for Linear<V> {
     fn fit(&mut self, xs_and_ys: &[(V, V)]) -> QLabResult<()> {
         let mut points = Vec::with_capacity(xs_and_ys.len());
         for &(x, y) in xs_and_ys {

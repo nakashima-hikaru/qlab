@@ -13,6 +13,7 @@ description = "Mathematics related code for the qlab"
 [dependencies]
 num-traits = { workspace = true }
 qlab-error = { workspace = true }
+spline-interpolation = { version = "0.1.0", path = "src/interpolation/spline-interpolation", default-features = false }
 
 [lints]
 workspace = true

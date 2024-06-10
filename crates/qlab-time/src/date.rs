@@ -1,7 +1,7 @@
 use crate::business_day_convention::DateRolling;
 use crate::calendar::Calendar;
 use crate::period::Period;
-use chrono::{Datelike, NaiveDate};
+use chrono::{Datelike, NaiveDate, TimeDelta};
 use std::fmt;
 use std::fmt::{Debug, Formatter};
 use std::ops::Sub;
@@ -238,10 +238,10 @@ impl From<NaiveDate> for Date {
 }
 
 impl Sub for Date {
-    type Output = i32;
+    type Output = i64;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        self.0.num_days_from_ce() - rhs.0.num_days_from_ce()
+        (self.0 - rhs.0).num_days()
     }
 }
 

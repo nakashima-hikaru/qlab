@@ -1,6 +1,6 @@
 use crate::date::Date;
 use crate::day_count::DayCount;
-use num_traits::{Float, FromPrimitive};
+use num_traits::{real::Real, FromPrimitive};
 use qlab_error::ComputeError::InvalidInput;
 use qlab_error::{ComputeError, QLabResult};
 
@@ -25,7 +25,7 @@ impl Thirty360 {
 }
 
 impl DayCount for Thirty360 {
-    fn calculate_day_count_fraction<V: Float + FromPrimitive>(
+    fn calculate_day_count_fraction<V: Real + FromPrimitive>(
         date1: Date,
         date2: Date,
     ) -> QLabResult<V> {
