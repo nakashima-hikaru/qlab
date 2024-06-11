@@ -16,7 +16,7 @@ pub struct CatmullRom<V: Value> {
 }
 
 impl<V: Value> Interpolator<V> for CatmullRom<V> {
-    /// Constructs a new `CatmullRomSpline` from a slice of raw points.
+    /// Constructs a new `CatmullRom` from a slice of raw points.
     ///
     /// # Arguments
     ///
@@ -24,12 +24,12 @@ impl<V: Value> Interpolator<V> for CatmullRom<V> {
     ///
     /// # Returns
     ///
-    /// * `Result<Self, HermiteSplineError<V>>` - A `Result` that either contains the constructed `HermiteSpline` or an `HermiteSplineError`.
+    /// * `Result<Self, InterpolationError<V>>` - A `Result` that either contains the constructed `CatmullRom` or an `InterpolationError`.
     ///
     /// # Errors
     ///
-    /// * `HermiteSplineError::InsufficientPointsError(n)` - If the number of `raw_points` is less than 3, where `n` is the number of `raw_points`.
-    /// * `HermiteSplineError::PointOrderError` - If the x-coordinates of the `raw_points` are not in ascending order.
+    /// * `InterpolationError::InsufficientPointsError(n)` - If the number of `raw_points` is less than 3, where `n` is the number of `raw_points`.
+    /// * `InterpolationError::PointOrderError` - If the x-coordinates of the `raw_points` are not in ascending order.
     ///
     fn try_fit(&mut self, raw_points: &[(V, V)]) -> Result<(), InterpolationError<V>> {
         if raw_points.len() < 3 {
@@ -59,7 +59,7 @@ impl<V: Value> Interpolator<V> for CatmullRom<V> {
     /// # Returns
     ///
     /// * `Ok(V)`: If the value `x` is found in the Hermite spline, returns the corresponding value `V`.
-    /// * `Err(HermiteSplineError<V>)`: If the value `x` is not found, returns an error indicating whether `x` is out of the lower or upper bound of the spline.
+    /// * `Err(InterpolationError<V>)`: If the value `x` is not found, returns an error indicating whether `x` is out of the lower or upper bound of the spline.
     ///
     /// # Errors
     /// If `x` is below the lower bound of the spline's points, returns `Err(OutOfLowerBound(x))`.

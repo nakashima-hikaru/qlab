@@ -16,7 +16,7 @@ pub struct NaturalCubic<V: Value> {
 }
 
 impl<V: Value> Interpolator<V> for NaturalCubic<V> {
-    /// Tries to create a new `HermiteSpline` from the given raw points.
+    /// Tries to create a new `NaturalCubic` from the given raw points.
     ///
     /// # Arguments
     ///
@@ -26,8 +26,8 @@ impl<V: Value> Interpolator<V> for NaturalCubic<V> {
     ///
     /// # Returns
     ///
-    /// Returns `Ok(Self)` if the `HermiteSpline` is successfully created, otherwise returns a
-    /// `HermiteSplineError`.
+    /// Returns `Ok(Self)` if the `NaturalCubic` is successfully created, otherwise returns a
+    /// `InterpolationError`.
     ///
     /// # Errors
     ///

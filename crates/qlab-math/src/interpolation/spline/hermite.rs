@@ -16,7 +16,7 @@ pub struct Hermite<V: Value> {
 }
 
 impl<V: Value> Hermite<V> {
-    /// Creates a new instance of `HermiteSpline` from a slice of raw points.
+    /// Creates a new instance of `Hermite` from a slice of raw points.
     ///
     /// # Arguments
     ///
@@ -27,12 +27,12 @@ impl<V: Value> Hermite<V> {
     /// # Returns
     ///
     /// Returns a `Result` containing the constructed `HermiteSpline` on success,
-    /// or a `HermiteSplineError` if the raw points are not in ascending order based on x-coordinate.
+    /// or a `InterpolationError` if the raw points are not in ascending order based on x-coordinate.
     ///
     /// # Errors
     ///
-    /// * `HermiteSplineError::InsufficientPointsError(n)` - If the number of `raw_points` is less than 3, where `n` is the number of `raw_points`.
-    /// * `HermiteSplineError::PointOrderError` - If the x-coordinates of the `raw_points` are not in ascending order.
+    /// * `InterpolationError::InsufficientPointsError(n)` - If the number of `raw_points` is less than 3, where `n` is the number of `raw_points`.
+    /// * `InterpolationError::PointOrderError` - If the x-coordinates of the `raw_points` are not in ascending order.
     ///
     /// # Panics
     /// Will panic if `V` fail to cast constants.
