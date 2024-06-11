@@ -32,5 +32,6 @@ calendar = { version = "0.1.0", path = "third-parties/calendar", default-feature
 unsafe_code = "forbid"
 
 [workspace.lints.clippy]
-pedantic = "warn"
-cargo = "warn"
+pedantic = { level = "warn", priority = 0 }
+cargo = { level = "warn", priority = 0 }
+multiple_crate_versions = { level = "allow", priority = 1 }
