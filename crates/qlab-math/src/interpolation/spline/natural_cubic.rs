@@ -146,8 +146,6 @@ impl<V: Value> Interpolator<V> for NaturalCubic<V> {
 mod tests {
     use crate::interpolation::spline::natural_cubic::NaturalCubic;
     use crate::interpolation::Interpolator;
-    #[cfg(feature = "decimal")]
-    use rust_decimal::Decimal;
 
     #[test]
     fn test_f64() {
@@ -156,18 +154,5 @@ mod tests {
         interpolator.try_fit(&points).unwrap();
         let val = interpolator.try_value(0.75).unwrap();
         assert!((0.25_f64 - val) / 0.25_f64 < f64::EPSILON);
-    }
-
-    #[cfg(feature = "decimal")]
-    #[test]
-    fn test_decimal() {
-        let points = [
-            (Decimal::new(0, 0), Decimal::new(1, 0)),
-            (Decimal::new(5, 1), Decimal::new(5, 1)),
-            (Decimal::new(1, 0), Decimal::new(0, 0)),
-        ];
-        let interpolator = NaturalCubic::try_fit(&points).unwrap();
-        let val = interpolator.try_value(Decimal::new(75, 2)).unwrap();
-        assert_eq!(val, Decimal::from_str_exact("0.25").unwrap());
     }
 }

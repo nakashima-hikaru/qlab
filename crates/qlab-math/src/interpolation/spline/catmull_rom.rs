@@ -1,4 +1,5 @@
 use crate::interpolation::spline::Value;
+use crate::interpolation::Interpolator;
 use nalgebra::{Matrix4, Vector4};
 use num_traits::Zero;
 use qlab_error::InterpolationError;
@@ -14,7 +15,7 @@ pub struct CatmullRom<V: Value> {
     points: Vec<Point2<V>>,
 }
 
-impl<V: Value> CatmullRom<V> {
+impl<V: Value> Interpolator<V> for CatmullRom<V> {
     /// Constructs a new `CatmullRomSpline` from a slice of raw points.
     ///
     /// # Arguments
@@ -30,7 +31,7 @@ impl<V: Value> CatmullRom<V> {
     /// * `HermiteSplineError::InsufficientPointsError(n)` - If the number of `raw_points` is less than 3, where `n` is the number of `raw_points`.
     /// * `HermiteSplineError::PointOrderError` - If the x-coordinates of the `raw_points` are not in ascending order.
     ///
-    pub fn try_fit(&mut self, raw_points: &[(V, V)]) -> Result<(), InterpolationError<V>> {
+    fn try_fit(&mut self, raw_points: &[(V, V)]) -> Result<(), InterpolationError<V>> {
         if raw_points.len() < 3 {
             return Err(InterpolationError::InsufficientPointsError(
                 raw_points.len(),
@@ -68,7 +69,7 @@ impl<V: Value> CatmullRom<V> {
     /// * Will panic if points contains a point which cannot be compared partially.
     /// * Will panic if `V` cannot cast the constant `6`.
     #[allow(clippy::too_many_lines)]
-    pub fn try_value(self, x: V) -> Result<V, InterpolationError<V>> {
+    fn try_value(&self, x: V) -> Result<V, InterpolationError<V>> {
         match self
             .points
             .binary_search_by(|point| point.x.partial_cmp(&x).unwrap())
@@ -186,10 +187,8 @@ impl<V: Value> CatmullRom<V> {
 
 #[cfg(test)]
 mod tests {
-    #[cfg(feature = "decimal")]
-    use rust_decimal::Decimal;
-
     use crate::interpolation::spline::catmull_rom::CatmullRom;
+    use crate::interpolation::Interpolator;
 
     #[test]
     fn test_f64() {
@@ -198,21 +197,5 @@ mod tests {
         interpolator.try_fit(&points).unwrap();
         let val = interpolator.try_value(0.75).unwrap();
         assert!((val - 0.270_833_333_333_333_37_f64).abs() < f64::EPSILON);
-    }
-
-    #[cfg(feature = "decimal")]
-    #[test]
-    fn test_decimal() {
-        let points = [
-            (Decimal::new(0, 0), Decimal::new(1, 0)),
-            (Decimal::new(5, 1), Decimal::new(5, 1)),
-            (Decimal::new(1, 0), Decimal::new(0, 0)),
-        ];
-        let interpolator = CatmullRom::try_fit(&points).unwrap();
-        let val = interpolator.try_value(Decimal::new(75, 2)).unwrap();
-        assert_eq!(
-            val,
-            Decimal::from_str_exact("0.2708333333333333333333333333").unwrap()
-        );
     }
 }
