@@ -17,5 +17,6 @@ pub trait Value:
     + DivAssign
     + FromPrimitive
     + Real
+    + Default
 {
 }

@@ -9,14 +9,14 @@ use std::marker::PhantomData;
 /// A trait representing a yield curve with discount factor calculations.
 ///
 /// The trait is generic over the type of Realing point values (`V`) and the day count convention (`D`).
-pub struct YieldCurve<D: DayCount, V: Value, I: Interpolator<V>> {
+pub struct YieldCurve<D: DayCount, V: Value, I: Interpolator<I, V>> {
     settlement_date: Date,
     interpolator: I,
     _phantom: PhantomData<V>,
     _day_count: PhantomData<D>,
 }
 
-impl<V: Value, D: DayCount, I: Interpolator<V>> YieldCurve<D, V, I> {
+impl<V: Value, D: DayCount, I: Interpolator<I, V>> YieldCurve<D, V, I> {
     /// Creates a new instance of the `QLab` struct.
     ///
     /// # Arguments
@@ -33,12 +33,7 @@ impl<V: Value, D: DayCount, I: Interpolator<V>> YieldCurve<D, V, I> {
     ///
     /// # Errors
     /// Returns an `Err` variant if the lengths of `maturities` and `spot_yields` do not match.
-    pub fn new(
-        settlement_date: Date,
-        maturities: &[Date],
-        spot_yields: &[V],
-        mut interpolator: I,
-    ) -> QLabResult<Self> {
+    pub fn new(settlement_date: Date, maturities: &[Date], spot_yields: &[V]) -> QLabResult<Self> {
         if maturities.len() != spot_yields.len() {
             return Err(
                 InvalidInput("maturities and spot_yields are different lengths".into()).into(),
@@ -53,7 +48,7 @@ impl<V: Value, D: DayCount, I: Interpolator<V>> YieldCurve<D, V, I> {
             .copied()
             .zip(spot_yields.iter().copied())
             .collect();
-        interpolator.try_fit(&val)?;
+        let interpolator = I::default().try_fit(&val)?;
         Ok(Self {
             _phantom: PhantomData,
             settlement_date,
@@ -122,9 +117,9 @@ mod tests {
     #[derive(Default)]
     struct Flat(f64);
 
-    impl Interpolator<f64> for Flat {
-        fn try_fit(&mut self, _x_and_y: &[(f64, f64)]) -> Result<(), InterpolationError<f64>> {
-            Ok(())
+    impl Interpolator<Flat, f64> for Flat {
+        fn try_fit(self, _x_and_y: &[(f64, f64)]) -> Result<Self, InterpolationError<f64>> {
+            Ok(self)
         }
 
         fn try_value(&self, _t: f64) -> Result<f64, InterpolationError<f64>> {
@@ -137,19 +132,13 @@ mod tests {
         let settlement_date = Date::from_ymd(2022, 12, 31).unwrap();
         let maturities = vec![Date::from_ymd(2022, 12, 31).unwrap()];
         let spot_yields = vec![0.02]; // 2% yield
-        let interpolator = Flat(0.0);
 
-        let yield_curve = YieldCurve::<Act365, _, _>::new(
-            settlement_date,
-            &maturities,
-            &spot_yields,
-            interpolator,
-        )
-        .unwrap();
+        let yield_curve =
+            YieldCurve::<Act365, _, Flat>::new(settlement_date, &maturities, &spot_yields).unwrap();
 
         let d1 = Date::from_ymd(2023, 1, 1).unwrap();
         let d2 = Date::from_ymd(2023, 12, 31).unwrap();
         let discount_factor = yield_curve.discount_factor(d1, d2).unwrap();
-        assert!((discount_factor - 1.0).abs() < f64::EPSILON);
+        assert!((discount_factor - 1.0_f64).abs() < f64::EPSILON);
     }
 }

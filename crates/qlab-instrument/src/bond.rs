@@ -179,7 +179,7 @@ impl<V: Value> Bond<V> {
     ///
     /// # Errors
     /// Error occurs if a discount factor calculation fails
-    pub fn discounted_value<D: DayCount, I: Interpolator<V>>(
+    pub fn discounted_value<D: DayCount, I: Interpolator<I, V>>(
         &self,
         bond_settle_date: Date,
         yield_curve: &YieldCurve<D, V, I>,

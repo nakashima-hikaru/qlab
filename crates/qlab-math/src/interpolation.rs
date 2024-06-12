@@ -10,7 +10,7 @@ pub(crate) struct Point<V> {
     y: V,
 }
 
-pub trait Interpolator<V: Value> {
+pub trait Interpolator<I, V: Value>: Default {
     /// Fits the model to the given data points.
     ///
     /// This function adjusts the parameters of the model to minimize the difference
@@ -24,7 +24,7 @@ pub trait Interpolator<V: Value> {
     /// # Errors
     ///
     /// Returns an error if the fitting process fails.
-    fn try_fit(&mut self, xs_and_ys: &[(V, V)]) -> Result<(), InterpolationError<V>>;
+    fn try_fit(self, xs_and_ys: &[(V, V)]) -> Result<I, InterpolationError<V>>;
 
     /// Returns the value of type `V` and wraps it in a `QLabResult`.
     ///

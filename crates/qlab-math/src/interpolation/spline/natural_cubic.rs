@@ -15,7 +15,7 @@ pub struct NaturalCubic<V: Value> {
     points: Vec<Point3<V>>,
 }
 
-impl<V: Value> Interpolator<V> for NaturalCubic<V> {
+impl<V: Value> Interpolator<NaturalCubic<V>, V> for NaturalCubic<V> {
     /// Tries to create a new `NaturalCubic` from the given raw points.
     ///
     /// # Arguments
@@ -36,7 +36,7 @@ impl<V: Value> Interpolator<V> for NaturalCubic<V> {
     ///
     /// # Panics
     /// Will panic if `V` fail to cast constants.
-    fn try_fit(&mut self, raw_points: &[(V, V)]) -> Result<(), InterpolationError<V>> {
+    fn try_fit(mut self, raw_points: &[(V, V)]) -> Result<Self, InterpolationError<V>> {
         if raw_points.len() < 3 {
             return Err(InterpolationError::InsufficientPointsError(
                 raw_points.len(),
@@ -90,8 +90,7 @@ impl<V: Value> Interpolator<V> for NaturalCubic<V> {
         }
 
         self.points = points;
-
-        Ok(())
+        Ok(self)
     }
 
     /// Evaluates the Hermite spline at the given value `x`.
@@ -150,8 +149,7 @@ mod tests {
     #[test]
     fn test_f64() {
         let points = [(0.0, 1.0), (0.5, 0.5), (1.0, 0.0)];
-        let mut interpolator = NaturalCubic::default();
-        interpolator.try_fit(&points).unwrap();
+        let interpolator = NaturalCubic::default().try_fit(&points).unwrap();
         let val = interpolator.try_value(0.75).unwrap();
         assert!((0.25_f64 - val) / 0.25_f64 < f64::EPSILON);
     }

@@ -48,14 +48,14 @@ impl<V: Real> Linear<V> {
     }
 }
 
-impl<V: Value> Interpolator<V> for Linear<V> {
-    fn try_fit(&mut self, raw_points: &[(V, V)]) -> Result<(), InterpolationError<V>> {
+impl<V: Value> Interpolator<Linear<V>, V> for Linear<V> {
+    fn try_fit(mut self, raw_points: &[(V, V)]) -> Result<Self, InterpolationError<V>> {
         let mut points = Vec::with_capacity(raw_points.len());
         for &(x, y) in raw_points {
             points.push(Point { x, y });
         }
         self.points = points;
-        Ok(())
+        Ok(self)
     }
 
     /// Calculates the value at time `t` using linear interpolation based on a grid of points.

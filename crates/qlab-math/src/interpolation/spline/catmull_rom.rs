@@ -15,7 +15,7 @@ pub struct CatmullRom<V: Value> {
     points: Vec<Point2<V>>,
 }
 
-impl<V: Value> Interpolator<V> for CatmullRom<V> {
+impl<V: Value> Interpolator<CatmullRom<V>, V> for CatmullRom<V> {
     /// Constructs a new `CatmullRom` from a slice of raw points.
     ///
     /// # Arguments
@@ -31,7 +31,7 @@ impl<V: Value> Interpolator<V> for CatmullRom<V> {
     /// * `InterpolationError::InsufficientPointsError(n)` - If the number of `raw_points` is less than 3, where `n` is the number of `raw_points`.
     /// * `InterpolationError::PointOrderError` - If the x-coordinates of the `raw_points` are not in ascending order.
     ///
-    fn try_fit(&mut self, raw_points: &[(V, V)]) -> Result<(), InterpolationError<V>> {
+    fn try_fit(mut self, raw_points: &[(V, V)]) -> Result<Self, InterpolationError<V>> {
         if raw_points.len() < 3 {
             return Err(InterpolationError::InsufficientPointsError(
                 raw_points.len(),
@@ -48,7 +48,7 @@ impl<V: Value> Interpolator<V> for CatmullRom<V> {
             points.push(point);
         }
         self.points = points;
-        Ok(())
+        Ok(self)
     }
     /// Tries to find the value `x` in the Hermite spline.
     ///
@@ -193,8 +193,7 @@ mod tests {
     #[test]
     fn test_f64() {
         let points = [(0.0, 1.0), (0.5, 0.5), (1.0, 0.0)];
-        let mut interpolator = CatmullRom::default();
-        interpolator.try_fit(&points).unwrap();
+        let interpolator = CatmullRom::default().try_fit(&points).unwrap();
         let val = interpolator.try_value(0.75).unwrap();
         assert!((val - 0.270_833_333_333_333_37_f64).abs() < f64::EPSILON);
     }

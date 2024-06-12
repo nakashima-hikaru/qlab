@@ -44,9 +44,8 @@ fn main() {
     let spot_yields: Vec<f64> = vec![
         0.02, 0.0219, 0.0237, 0.0267, 0.0312, 0.0343, 0.0378, 0.0393, 0.04, 0.0401, 0.0401, 0.04,
     ];
-    let interpolator = Linear::new();
-    let yield_curve: YieldCurve<Act365, _, _> =
-        YieldCurve::new(spot_settle_date, &maturities, &spot_yields, interpolator).unwrap();
+    let yield_curve: YieldCurve<Act365, _, Linear<f64>> =
+        YieldCurve::new(spot_settle_date, &maturities, &spot_yields).unwrap();
     let val = bond_20_yr
         .discounted_value(spot_settle_date, &yield_curve)
         .unwrap();
