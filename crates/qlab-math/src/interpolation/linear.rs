@@ -15,11 +15,8 @@ use qlab_error::InterpolationError;
 /// use qlab_math::interpolation::linear::Linear;
 /// use qlab_math::interpolation::Interpolator;
 ///
-/// let mut linear: Linear<f32> = Linear::default();
-///
 /// let xs_and_ys: [(f32, f32); 2] = [(1.0_f32, 2.0_f32), (3.0_f32, 4.0_f32)];
-///
-/// linear.try_fit(&xs_and_ys).unwrap();
+/// let linear = Linear::default().try_fit(&xs_and_ys).unwrap();
 /// assert_eq!(linear.try_value(2.0).unwrap(), 3.0);
 ///
 /// ```

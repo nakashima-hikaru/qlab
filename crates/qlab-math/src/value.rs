@@ -20,3 +20,7 @@ pub trait Value:
     + Default
 {
 }
+
+impl Value for f32 {}
+
+impl Value for f64 {}
