@@ -1,18 +1,13 @@
+use crate::interpolation;
 use crate::interpolation::spline::Value;
-use crate::interpolation::Interpolator;
+use crate::interpolation::{Interpolator, Point2D};
 use nalgebra::{Matrix4, Vector4};
-use num_traits::Zero;
 use qlab_error::InterpolationError;
 use std::ops::Mul;
 
-struct Point2<V> {
-    pub x: V,
-    pub y: V,
-}
-
 #[derive(Default)]
 pub struct CatmullRom<V: Value> {
-    points: Vec<Point2<V>>,
+    points: Vec<Point2D<V>>,
 }
 
 impl<V: Value> Interpolator<CatmullRom<V>, V> for CatmullRom<V> {
@@ -40,7 +35,7 @@ impl<V: Value> Interpolator<CatmullRom<V>, V> for CatmullRom<V> {
         let mut temp = raw_points[0].0;
         let mut points = Vec::new();
         for &(x, y) in raw_points {
-            let point = Point2 { x, y };
+            let point = Point2D { x, y };
             if point.x < temp {
                 return Err(InterpolationError::PointOrderError);
             }
@@ -70,118 +65,100 @@ impl<V: Value> Interpolator<CatmullRom<V>, V> for CatmullRom<V> {
     /// * Will panic if `V` cannot cast the constant `6`.
     #[allow(clippy::too_many_lines)]
     fn try_value(&self, x: V) -> Result<V, InterpolationError<V>> {
-        match self
-            .points
-            .binary_search_by(|point| point.x.partial_cmp(&x).unwrap())
-        {
-            Ok(pos) => Ok(self.points[pos].y),
-            Err(pos) => {
-                if pos.is_zero() {
-                    return Err(InterpolationError::OutOfLowerBound(x));
-                }
-                if pos > self.points.len() {
-                    return Err(InterpolationError::OutOfUpperBound(x));
-                }
-                let pos = pos - 1;
-                let point = &self.points[pos];
-                let next_point = &self.points[pos + 1];
-                let h = next_point.x - point.x;
-                let delta = (x - point.x) / h;
-                let delta2 = delta * delta;
-                let delta3 = delta2 * delta;
-                let d = Vector4::new(delta3, delta2, delta, V::one());
-                Ok((d.transpose()
-                    * if pos == 0 {
-                        let next_next_point = &self.points[pos + 2];
-                        let next_h = next_next_point.x - next_point.x;
-                        let beta = h / (h + next_h);
-                        Matrix4::new(
-                            V::zero(),
-                            V::one() - beta,
-                            -V::one(),
-                            beta,
-                            V::zero(),
-                            -V::one() + beta,
-                            V::one(),
-                            -beta,
-                            V::zero(),
-                            -V::one(),
-                            V::one(),
-                            V::zero(),
-                            V::zero(),
-                            V::one(),
-                            V::zero(),
-                            V::zero(),
-                        )
-                        .mul(Vector4::new(
-                            V::zero(),
-                            point.y,
-                            next_point.y,
-                            next_next_point.y,
-                        ))
-                    } else if pos + 2 == self.points.len() {
-                        let prev_point = &self.points[pos - 1];
-                        let prev_h = next_point.x - prev_point.x;
-                        let alpha = h / (h + prev_h);
-                        Matrix4::new(
-                            -alpha,
-                            V::one(),
-                            -V::one() * alpha,
-                            V::zero(),
-                            V::from_i8(2).unwrap() * alpha,
-                            V::from_i8(-2).unwrap(),
-                            V::from_i8(2).unwrap() - V::from_i8(2).unwrap() * alpha,
-                            V::zero(),
-                            -alpha,
-                            V::zero(),
-                            alpha,
-                            V::zero(),
-                            V::zero(),
-                            V::one(),
-                            V::zero(),
-                            V::zero(),
-                        )
-                        .mul(Vector4::new(
-                            prev_point.y,
-                            point.y,
-                            next_point.y,
-                            V::zero(),
-                        ))
-                    } else {
-                        let prev_point = &self.points[pos - 1];
-                        let prev_h = next_point.x - prev_point.x;
-                        let alpha = h / (h + prev_h);
-                        let next_next_point = &self.points[pos + 2];
-                        let next_h = next_next_point.x - next_point.x;
-                        let beta = h / (h + next_h);
-                        Matrix4::new(
-                            -alpha,
-                            V::from_i8(2).unwrap() - beta,
-                            V::from_i8(-2).unwrap() + alpha,
-                            beta,
-                            V::from_i8(2).unwrap() * alpha,
-                            beta - V::from_i8(3).unwrap(),
-                            V::from_i8(3).unwrap() - V::from_i8(2).unwrap() * alpha,
-                            -beta,
-                            -alpha,
-                            V::zero(),
-                            alpha,
-                            V::zero(),
-                            V::zero(),
-                            V::one(),
-                            V::zero(),
-                            V::zero(),
-                        )
-                        .mul(Vector4::new(
-                            prev_point.y,
-                            point.y,
-                            next_point.y,
-                            next_next_point.y,
-                        ))
-                    })
-                .x)
-            }
-        }
+        let pos = interpolation::find_index_at_left_boundary(&self.points, x)?;
+
+        let point = &self.points[pos];
+        let next_point = &self.points[pos + 1];
+        let h = next_point.x - point.x;
+        let delta = (x - point.x) / h;
+        let delta2 = delta * delta;
+        let delta3 = delta2 * delta;
+        let d = Vector4::new(delta3, delta2, delta, V::one());
+        Ok((d.transpose()
+            * if pos == 0 {
+                let next_next_point = &self.points[pos + 2];
+                let next_h = next_next_point.x - next_point.x;
+                let beta = h / (h + next_h);
+                Matrix4::new(
+                    V::zero(),
+                    V::one() - beta,
+                    -V::one(),
+                    beta,
+                    V::zero(),
+                    -V::one() + beta,
+                    V::one(),
+                    -beta,
+                    V::zero(),
+                    -V::one(),
+                    V::one(),
+                    V::zero(),
+                    V::zero(),
+                    V::one(),
+                    V::zero(),
+                    V::zero(),
+                )
+                .mul(Vector4::new(
+                    V::zero(),
+                    point.y,
+                    next_point.y,
+                    next_next_point.y,
+                ))
+            } else if pos + 2 == self.points.len() {
+                let prev_point = &self.points[pos - 1];
+                let prev_h = next_point.x - prev_point.x;
+                let alpha = h / (h + prev_h);
+                Matrix4::new(
+                    -alpha,
+                    V::one(),
+                    -V::one() * alpha,
+                    V::zero(),
+                    V::from_i8(2).unwrap() * alpha,
+                    V::from_i8(-2).unwrap(),
+                    V::from_i8(2).unwrap() - V::from_i8(2).unwrap() * alpha,
+                    V::zero(),
+                    -alpha,
+                    V::zero(),
+                    alpha,
+                    V::zero(),
+                    V::zero(),
+                    V::one(),
+                    V::zero(),
+                    V::zero(),
+                )
+                .mul(Vector4::new(prev_point.y, point.y, next_point.y, V::zero()))
+            } else {
+                let prev_point = &self.points[pos - 1];
+                let prev_h = next_point.x - prev_point.x;
+                let alpha = h / (h + prev_h);
+                let next_next_point = &self.points[pos + 2];
+                let next_h = next_next_point.x - next_point.x;
+                let beta = h / (h + next_h);
+                Matrix4::new(
+                    -alpha,
+                    V::from_i8(2).unwrap() - beta,
+                    V::from_i8(-2).unwrap() + alpha,
+                    beta,
+                    V::from_i8(2).unwrap() * alpha,
+                    beta - V::from_i8(3).unwrap(),
+                    V::from_i8(3).unwrap() - V::from_i8(2).unwrap() * alpha,
+                    -beta,
+                    -alpha,
+                    V::zero(),
+                    alpha,
+                    V::zero(),
+                    V::zero(),
+                    V::one(),
+                    V::zero(),
+                    V::zero(),
+                )
+                .mul(Vector4::new(
+                    prev_point.y,
+                    point.y,
+                    next_point.y,
+                    next_next_point.y,
+                ))
+            })
+        .x)
     }
 }
 

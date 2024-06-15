@@ -1,18 +1,12 @@
+use crate::interpolation;
 use crate::interpolation::spline::Value;
-use crate::interpolation::Interpolator;
+use crate::interpolation::{Interpolator, Point2DWithSlope};
 use crate::linear_algebra::tridiagonal_matrix::TridiagonalMatrix;
-use num_traits::Zero;
 use qlab_error::InterpolationError;
-
-struct Point3<V> {
-    pub x: V,
-    pub y: V,
-    pub dydx: V,
-}
 
 #[derive(Default)]
 pub struct NaturalCubic<V: Value> {
-    points: Vec<Point3<V>>,
+    points: Vec<Point2DWithSlope<V>>,
 }
 
 impl<V: Value> Interpolator<NaturalCubic<V>, V> for NaturalCubic<V> {
@@ -81,11 +75,11 @@ impl<V: Value> Interpolator<NaturalCubic<V>, V> for NaturalCubic<V> {
         let mut temp = raw_points[0].0;
         let mut points = Vec::new();
         for (&(x, y), dydx) in raw_points.iter().zip(derivatives) {
-            let point = Point3 { x, y, dydx };
-            if point.x < temp {
+            let point = Point2DWithSlope::new(x, y, dydx);
+            if point.coordinate.x < temp {
                 return Err(InterpolationError::PointOrderError);
             }
-            temp = point.x;
+            temp = point.coordinate.x;
             points.push(point);
         }
 
@@ -112,32 +106,23 @@ impl<V: Value> Interpolator<NaturalCubic<V>, V> for NaturalCubic<V> {
     /// * Will panic if `V` cannot cast constants.
     ///
     fn try_value(&self, x: V) -> Result<V, InterpolationError<V>> {
-        match self
-            .points
-            .binary_search_by(|point| point.x.partial_cmp(&x).unwrap())
-        {
-            Ok(pos) => Ok(self.points[pos].y),
-            Err(pos) => {
-                if pos.is_zero() {
-                    return Err(InterpolationError::OutOfLowerBound(x));
-                }
-                if pos > self.points.len() {
-                    return Err(InterpolationError::OutOfUpperBound(x));
-                }
-                let pos = pos - 1;
-                let point = &self.points[pos];
-                let next_point = &self.points[pos + 1];
-                let h = next_point.x - point.x;
-                let six = V::from_i8(6).unwrap();
-                Ok(
-                    (next_point.x - x) * (next_point.x - x) * (next_point.x - x) / six / h
-                        * point.dydx
-                        + (x - point.x) * (x - point.x) * (x - point.x) / six / h * next_point.dydx
-                        + (next_point.x - x) * (point.y / h - h / six * point.dydx)
-                        + (x - point.x) * (next_point.y / h - h / six * next_point.dydx),
-                )
-            }
-        }
+        let pos = interpolation::find_index_at_left_boundary(&self.points, x)?;
+        let point = &self.points[pos];
+        let next_point = &self.points[pos + 1];
+        let h = next_point.coordinate.x - point.coordinate.x;
+        let six = V::from_i8(6).unwrap();
+        Ok((next_point.coordinate.x - x)
+            * (next_point.coordinate.x - x)
+            * (next_point.coordinate.x - x)
+            / six
+            / h
+            * point.dydx
+            + (x - point.coordinate.x) * (x - point.coordinate.x) * (x - point.coordinate.x)
+                / six
+                / h
+                * next_point.dydx
+            + (next_point.coordinate.x - x) * (point.coordinate.y / h - h / six * point.dydx)
+            + (x - point.coordinate.x) * (next_point.coordinate.y / h - h / six * next_point.dydx))
     }
 }
 

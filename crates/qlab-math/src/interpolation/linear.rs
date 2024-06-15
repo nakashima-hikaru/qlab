@@ -1,4 +1,5 @@
-use crate::interpolation::{Interpolator, Point};
+use crate::interpolation;
+use crate::interpolation::{Interpolator, Point2D};
 use crate::value::Value;
 use num_traits::real::Real;
 use qlab_error::InterpolationError;
@@ -22,7 +23,7 @@ use qlab_error::InterpolationError;
 /// ```
 #[derive(Default)]
 pub struct Linear<V> {
-    points: Vec<Point<V>>,
+    points: Vec<Point2D<V>>,
 }
 
 impl<V: Real> Linear<V> {
@@ -49,7 +50,7 @@ impl<V: Value> Interpolator<Linear<V>, V> for Linear<V> {
     fn try_fit(mut self, raw_points: &[(V, V)]) -> Result<Self, InterpolationError<V>> {
         let mut points = Vec::with_capacity(raw_points.len());
         for &(x, y) in raw_points {
-            points.push(Point { x, y });
+            points.push(Point2D { x, y });
         }
         self.points = points;
         Ok(self)
@@ -71,25 +72,12 @@ impl<V: Value> Interpolator<Linear<V>, V> for Linear<V> {
     /// # Errors
     ///
     /// * `InvalidInput` - Represents an error when the input is invalid or out-of-bounds.
-    fn try_value(&self, t: V) -> Result<V, InterpolationError<V>> {
-        let last_point = self
-            .points
-            .last()
-            .ok_or(InterpolationError::InsufficientPointsError(
-                self.points.len(),
-            ))?;
+    fn try_value(&self, x: V) -> Result<V, InterpolationError<V>> {
+        let pos = interpolation::find_index_at_left_boundary(&self.points, x)?;
 
-        if t >= last_point.x {
-            return Ok(last_point.y);
-        }
-        let idx = self.points.partition_point(|&point| point.x < t);
-        if idx == 0 {
-            return Err(InterpolationError::OutOfLowerBound(t));
-        }
-
-        Ok(self.points[idx - 1].y
-            + (self.points[idx].y - self.points[idx - 1].y)
-                / (self.points[idx].x - self.points[idx - 1].x)
-                * (t - self.points[idx - 1].x))
+        Ok(self.points[pos].y
+            + (self.points[pos + 1].y - self.points[pos].y)
+                / (self.points[pos + 1].x - self.points[pos].x)
+                * (x - self.points[pos].x))
     }
 }

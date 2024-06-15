@@ -1,13 +1,43 @@
 use crate::value::Value;
+use num_traits::Zero;
 use qlab_error::InterpolationError;
 
 pub mod linear;
 pub mod spline;
 
-#[derive(Copy, Clone, Debug)]
-pub(crate) struct Point<V> {
+trait X<V> {
+    fn x(&self) -> &V;
+}
+
+struct Point2D<V> {
     x: V,
     y: V,
+}
+
+struct Point2DWithSlope<V> {
+    coordinate: Point2D<V>,
+    dydx: V,
+}
+
+impl<V> Point2DWithSlope<V> {
+    fn new(x: V, y: V, dydx: V) -> Self {
+        Self {
+            coordinate: Point2D { x, y },
+            dydx,
+        }
+    }
+}
+
+impl<V> X<V> for Point2DWithSlope<V> {
+    fn x(&self) -> &V {
+        &self.coordinate.x
+    }
+}
+
+impl<V> X<V> for Point2D<V> {
+    fn x(&self) -> &V {
+        &self.x
+    }
 }
 
 pub trait Interpolator<I, V: Value>: Default {
@@ -40,4 +70,18 @@ pub trait Interpolator<I, V: Value>: Default {
     ///
     /// An Error returns if interpolation fails.
     fn try_value(&self, t: V) -> Result<V, InterpolationError<V>>;
+}
+
+fn find_index_at_left_boundary<V: PartialOrd>(
+    points: &[impl X<V>],
+    x: V,
+) -> Result<usize, InterpolationError<V>> {
+    let pos = points.partition_point(|point| *point.x() < x);
+    if pos.is_zero() {
+        return Err(InterpolationError::OutOfLowerBound(x));
+    }
+    if pos > points.len() {
+        return Err(InterpolationError::OutOfUpperBound(x));
+    }
+    Ok(pos - 1)
 }
