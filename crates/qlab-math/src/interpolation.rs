@@ -76,11 +76,17 @@ fn find_index_at_left_boundary<V: PartialOrd>(
     points: &[impl X<V>],
     x: V,
 ) -> Result<usize, InterpolationError<V>> {
+    if points.is_empty() {
+        return Err(InterpolationError::InsufficientPointsError(points.len()));
+    }
     let pos = points.partition_point(|point| *point.x() < x);
+    if pos.is_zero() && *points.iter().next().unwrap().x() <= x {
+        return Ok(0);
+    }
     if pos.is_zero() {
         return Err(InterpolationError::OutOfLowerBound(x));
     }
-    if pos > points.len() {
+    if pos == points.len() {
         return Err(InterpolationError::OutOfUpperBound(x));
     }
     Ok(pos - 1)
