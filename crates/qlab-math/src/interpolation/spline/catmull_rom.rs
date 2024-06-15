@@ -1,6 +1,5 @@
-use crate::interpolation;
 use crate::interpolation::spline::Value;
-use crate::interpolation::{Interpolator, Point2D};
+use crate::interpolation::{find_index_at_left_boundary, Interpolator, Point2D};
 use nalgebra::{Matrix4, Vector4};
 use qlab_error::InterpolationError;
 use std::ops::Mul;
@@ -65,7 +64,7 @@ impl<V: Value> Interpolator<CatmullRom<V>, V> for CatmullRom<V> {
     /// * Will panic if `V` cannot cast the constant `6`.
     #[allow(clippy::too_many_lines)]
     fn try_value(&self, x: V) -> Result<V, InterpolationError<V>> {
-        let pos = interpolation::find_index_at_left_boundary(&self.points, x)?;
+        let pos = find_index_at_left_boundary(&self.points, x)?;
 
         let point = &self.points[pos];
         let next_point = &self.points[pos + 1];

@@ -1,6 +1,5 @@
-use crate::interpolation;
 use crate::interpolation::spline::Value;
-use crate::interpolation::{Interpolator, Point2DWithSlope};
+use crate::interpolation::{find_index_at_left_boundary, Interpolator, Point2DWithSlope};
 use crate::linear_algebra::tridiagonal_matrix::TridiagonalMatrix;
 use qlab_error::InterpolationError;
 
@@ -106,7 +105,7 @@ impl<V: Value> Interpolator<NaturalCubic<V>, V> for NaturalCubic<V> {
     /// * Will panic if `V` cannot cast constants.
     ///
     fn try_value(&self, x: V) -> Result<V, InterpolationError<V>> {
-        let pos = interpolation::find_index_at_left_boundary(&self.points, x)?;
+        let pos = find_index_at_left_boundary(&self.points, x)?;
         let point = &self.points[pos];
         let next_point = &self.points[pos + 1];
         let h = next_point.coordinate.x - point.coordinate.x;

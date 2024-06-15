@@ -1,5 +1,4 @@
-use crate::interpolation;
-use crate::interpolation::{Interpolator, Point2D};
+use crate::interpolation::{find_index_at_left_boundary, Interpolator, Point2D};
 use crate::value::Value;
 use num_traits::real::Real;
 use qlab_error::InterpolationError;
@@ -73,7 +72,7 @@ impl<V: Value> Interpolator<Linear<V>, V> for Linear<V> {
     ///
     /// * `InvalidInput` - Represents an error when the input is invalid or out-of-bounds.
     fn try_value(&self, x: V) -> Result<V, InterpolationError<V>> {
-        let pos = interpolation::find_index_at_left_boundary(&self.points, x)?;
+        let pos = find_index_at_left_boundary(&self.points, x)?;
 
         Ok(self.points[pos].y
             + (self.points[pos + 1].y - self.points[pos].y)
