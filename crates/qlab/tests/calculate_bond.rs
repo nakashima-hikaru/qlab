@@ -50,5 +50,5 @@ fn main() {
         .discounted_value(spot_settle_date, &yield_curve)
         .unwrap();
     println!("{}", bond_20_yr.bond_id());
-    println!("{val}"); // 1314.5664389486494
+    println!("{val}"); // 1314.5577192000126
 }

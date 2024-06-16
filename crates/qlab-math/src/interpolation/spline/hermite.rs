@@ -1,17 +1,11 @@
 use crate::interpolation::spline::Value;
+use crate::interpolation::{find_index_at_left_boundary, Point2DWithSlope};
 use nalgebra::Matrix4;
 use nalgebra::Vector4;
-use num_traits::Zero;
 use qlab_error::InterpolationError;
 
-struct Point3<V> {
-    pub x: V,
-    pub y: V,
-    pub dydx: V,
-}
-
 pub struct Hermite<V: Value> {
-    points: Vec<Point3<V>>,
+    points: Vec<Point2DWithSlope<V>>,
     m: Matrix4<V>,
 }
 
@@ -41,11 +35,11 @@ impl<V: Value> Hermite<V> {
 
         let mut points = Vec::new();
         for &(x, y, dydx) in raw_points {
-            let point = Point3 { x, y, dydx };
-            if point.x < temp {
+            let point = Point2DWithSlope::new(x, y, dydx);
+            if point.coordinate.x < temp {
                 return Err(InterpolationError::PointOrderError);
             }
-            temp = point.x;
+            temp = point.coordinate.x;
             points.push(point);
         }
         let m = Matrix4::new(
@@ -88,29 +82,21 @@ impl<V: Value> Hermite<V> {
     /// # Panics
     /// Will panic if partial comparison of points fail.
     pub fn try_value(&self, x: V) -> Result<V, InterpolationError<V>> {
-        match self
-            .points
-            .binary_search_by(|point| point.x.partial_cmp(&x).unwrap())
-        {
-            Ok(pos) => Ok(self.points[pos].y),
-            Err(pos) => {
-                if pos.is_zero() {
-                    return Err(InterpolationError::OutOfLowerBound(x));
-                }
-                if pos > self.points.len() {
-                    return Err(InterpolationError::OutOfUpperBound(x));
-                }
-                let pos = pos - 1;
-                let point = &self.points[pos];
-                let next_point = &self.points[pos + 1];
-                let h = next_point.x - point.x;
-                let delta = (x - point.x) / h;
-                let delta2 = delta * delta;
-                let delta3 = delta2 * delta;
-                let d = Vector4::new(delta3, delta2, delta, V::from_i8(1).unwrap());
-                let f = Vector4::new(point.y, next_point.y, point.dydx * h, next_point.dydx * h);
-                Ok((d.transpose() * self.m * f).x)
-            }
-        }
+        let pos = find_index_at_left_boundary(&self.points, x)?;
+
+        let point = &self.points[pos];
+        let next_point = &self.points[pos + 1];
+        let h = next_point.coordinate.x - point.coordinate.x;
+        let delta = (x - point.coordinate.x) / h;
+        let delta2 = delta * delta;
+        let delta3 = delta2 * delta;
+        let d = Vector4::new(delta3, delta2, delta, V::one());
+        let f = Vector4::new(
+            point.coordinate.y,
+            next_point.coordinate.y,
+            point.dydx * h,
+            next_point.dydx * h,
+        );
+        Ok((d.transpose() * self.m * f).x)
     }
 }

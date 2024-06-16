@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 use std::fmt;
-use std::fmt::{Display, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 use std::ops::Deref;
 use thiserror::Error;
 

@@ -1,6 +1,7 @@
 use crate::interpolation::spline::Value;
 use crate::interpolation::{find_index_at_left_boundary, Interpolator, Point2DWithSlope};
 use crate::linear_algebra::tridiagonal_matrix::TridiagonalMatrix;
+use nalgebra::{DVector, Dim, Dyn, VecStorage, U1};
 use qlab_error::InterpolationError;
 
 #[derive(Default)]
@@ -35,41 +36,54 @@ impl<V: Value> Interpolator<NaturalCubic<V>, V> for NaturalCubic<V> {
                 raw_points.len(),
             ));
         }
-        let mut du = Vec::with_capacity(raw_points.len() - 1);
-        let mut d = Vec::with_capacity(raw_points.len());
-        let mut dl = Vec::with_capacity(raw_points.len() - 1);
-        for i in 0..raw_points.len() {
-            if i == 0 {
-                du.push(V::zero());
-                d.push(V::one());
-            } else if i + 1 == raw_points.len() {
-                d.push(V::one());
-                dl.push(V::zero());
-            } else {
-                let h = raw_points[i].0 - raw_points[i - 1].0;
-                let h_next = raw_points[i + 1].0 - raw_points[i].0;
-                du.push(h_next / V::from_i8(6).unwrap());
-                d.push((h + h_next) / V::from_i8(3).unwrap());
-                dl.push(h / V::from_i8(6).unwrap());
+        let mut m = Vec::with_capacity(raw_points.len() - 2);
+        let mut b_upper_diagonals = Vec::with_capacity(raw_points.len() - 3);
+        let mut b_diagonals = Vec::with_capacity(raw_points.len() - 2);
+        let mut b_lower_diagonals = Vec::with_capacity(raw_points.len() - 3);
+        let mut c_upper_diagonals = Vec::with_capacity(raw_points.len() - 3);
+        let mut c_diagonals = Vec::with_capacity(raw_points.len() - 2);
+        let mut c_lower_diagonals = Vec::with_capacity(raw_points.len() - 3);
+        for i in 1..raw_points.len() - 1 {
+            let h = raw_points[i].0 - raw_points[i - 1].0;
+            let h_next = raw_points[i + 1].0 - raw_points[i].0;
+            if i != 1 {
+                b_lower_diagonals.push(h / V::from_i8(6).unwrap());
+                c_lower_diagonals.push(h.recip());
             }
-        }
-
-        let mut b = Vec::with_capacity(raw_points.len());
-        for i in 0..raw_points.len() {
-            if i == 0 || i + 1 == raw_points.len() {
-                b.push(V::zero());
-            } else {
-                b.push(
-                    (raw_points[i + 1].1 - raw_points[i].1)
-                        / (raw_points[i + 1].0 - raw_points[i].0)
-                        - (raw_points[i].1 - raw_points[i - 1].1)
-                            / (raw_points[i].0 - raw_points[i - 1].0),
-                );
+            if i + 2 != raw_points.len() {
+                b_upper_diagonals.push(h_next / V::from_i8(6).unwrap());
+                c_upper_diagonals.push(h_next.recip());
             }
+            if i == 1 {
+                m.push(raw_points[i - 1].1 / h);
+            } else if i + 2 == raw_points.len() {
+                m.push(raw_points[i + 1].1 / h_next);
+            } else {
+                m.push(V::zero());
+            }
+            b_diagonals.push((h + h_next) / V::from_i8(3).unwrap());
+            c_diagonals.push(-(h.recip() + h_next.recip()));
         }
-
-        let matrix = TridiagonalMatrix::try_new(du, d, dl).unwrap();
-        let derivatives = matrix.solve(&b);
+        let b =
+            TridiagonalMatrix::try_new(b_upper_diagonals, b_diagonals, b_lower_diagonals).unwrap();
+        let c =
+            TridiagonalMatrix::try_new(c_upper_diagonals, c_diagonals, c_lower_diagonals).unwrap();
+        let mut y = Vec::with_capacity(raw_points.len() - 2);
+        for raw_point in raw_points.iter().take(raw_points.len() - 1).skip(1) {
+            y.push(raw_point.1);
+        }
+        let rhs = VecStorage::new(Dyn::from_usize(raw_points.len() - 2), U1, (c * y).unwrap());
+        let mut rhs = DVector::from_data(rhs);
+        let m = VecStorage::new(Dyn::from_usize(raw_points.len() - 2), U1, m);
+        let m = DVector::from_data(m);
+        rhs += m;
+        let y2 = b.solve(rhs.as_slice());
+        let mut derivatives = Vec::with_capacity(raw_points.len());
+        derivatives.push(V::zero());
+        for val in y2 {
+            derivatives.push(val);
+        }
+        derivatives.push(V::zero());
 
         let mut temp = raw_points[0].0;
         let mut points = Vec::new();

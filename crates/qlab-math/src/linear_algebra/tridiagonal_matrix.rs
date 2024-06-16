@@ -1,4 +1,5 @@
 use crate::value::Value;
+use std::ops::Mul;
 
 #[derive(Debug)]
 pub enum MatrixValidationError {
@@ -33,6 +34,9 @@ impl<V: Value> TridiagonalMatrix<V> {
 
     // Solve Ax = b.
     pub fn solve(self, b: &[V]) -> Vec<V> {
+        if self.size == 1 {
+            return vec![b[0] / self.diagonal[0]];
+        }
         // shape validation is already done at construction phase
         solve_with_thomas_algorithm_unchecked(
             self.size,
@@ -41,6 +45,29 @@ impl<V: Value> TridiagonalMatrix<V> {
             self.upper_diagonal.as_slice(),
             b,
         )
+    }
+}
+
+impl<V: Value> Mul<Vec<V>> for TridiagonalMatrix<V> {
+    type Output = Option<Vec<V>>;
+
+    fn mul(self, rhs: Vec<V>) -> Self::Output {
+        if rhs.len() != self.size {
+            return None;
+        }
+        let mut ret = Vec::with_capacity(self.size);
+        for i in 0..self.size {
+            let mut temp = self.diagonal[i] * rhs[i];
+            if i + 1 < self.size {
+                temp += self.upper_diagonal[i] * rhs[i + 1];
+            }
+            if i > 0 {
+                temp += self.lower_diagonal[i - 1] * rhs[i - 1];
+            }
+
+            ret.push(temp);
+        }
+        Some(ret)
     }
 }
 

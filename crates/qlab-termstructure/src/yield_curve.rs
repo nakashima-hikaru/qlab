@@ -103,6 +103,8 @@ impl<V: Value, D: DayCount, I: Interpolator<I, V>> YieldCurve<D, V, I> {
         let y1 = self.yield_curve(t1)?;
         Ok((t1 * y1 - t2 * y2).exp())
     }
+
+    // Calculates continuous yield at the specified time.
     fn yield_curve(&self, t: V) -> QLabResult<V> {
         Ok(self.interpolator.try_value(t)?)
     }
