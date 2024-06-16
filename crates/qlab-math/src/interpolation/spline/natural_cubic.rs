@@ -1,7 +1,7 @@
 use crate::interpolation::spline::Value;
 use crate::interpolation::{find_index_at_left_boundary, Interpolator, Point2DWithSlope};
 use crate::linear_algebra::tridiagonal_matrix::TridiagonalMatrix;
-use nalgebra::{DVector, Dim, Dyn, VecStorage, U1};
+use nalgebra::DVector;
 use qlab_error::InterpolationError;
 
 #[derive(Default)]
@@ -72,11 +72,7 @@ impl<V: Value> Interpolator<NaturalCubic<V>, V> for NaturalCubic<V> {
         for raw_point in raw_points.iter().take(raw_points.len() - 1).skip(1) {
             y.push(raw_point.1);
         }
-        let rhs = VecStorage::new(Dyn::from_usize(raw_points.len() - 2), U1, (c * y).unwrap());
-        let mut rhs = DVector::from_data(rhs);
-        let m = VecStorage::new(Dyn::from_usize(raw_points.len() - 2), U1, m);
-        let m = DVector::from_data(m);
-        rhs += m;
+        let rhs = DVector::from((c * y).unwrap()) + DVector::from(m);
         let y2 = b.solve(rhs.as_slice());
         let mut derivatives = Vec::with_capacity(raw_points.len());
         derivatives.push(V::zero());
@@ -86,7 +82,7 @@ impl<V: Value> Interpolator<NaturalCubic<V>, V> for NaturalCubic<V> {
         derivatives.push(V::zero());
 
         let mut temp = raw_points[0].0;
-        let mut points = Vec::new();
+        let mut points = Vec::with_capacity(raw_points.len());
         for (&(x, y), dydx) in raw_points.iter().zip(derivatives) {
             let point = Point2DWithSlope::new(x, y, dydx);
             if point.coordinate.x < temp {
