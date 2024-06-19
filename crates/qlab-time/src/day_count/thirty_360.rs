@@ -4,7 +4,7 @@ use qlab_error::ComputeError::InvalidInput;
 use qlab_error::{ComputeError, QLabResult};
 use qlab_math::value::Value;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Thirty360;
 
 impl Thirty360 {

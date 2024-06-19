@@ -3,7 +3,7 @@ use crate::day_count::DayCount;
 use qlab_error::{ComputeError, QLabResult};
 use qlab_math::value::Value;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Act360;
 
 impl DayCount for Act360 {

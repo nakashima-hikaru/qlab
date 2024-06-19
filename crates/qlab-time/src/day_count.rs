@@ -6,7 +6,7 @@ use crate::date::Date;
 use qlab_error::QLabResult;
 use qlab_math::value::Value;
 
-pub trait DayCount {
+pub trait DayCount: Copy {
     /// Calculates the day count fraction between two dates.
     ///
     /// This function calculates the day count fraction between `date1` and `date2`
