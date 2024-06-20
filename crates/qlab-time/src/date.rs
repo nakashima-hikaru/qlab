@@ -1,5 +1,6 @@
-use crate::business_day_convention::DateRolling;
 use crate::calendar::Calendar;
+use crate::date_rolling::DateRolling;
+use crate::period::years::Years;
 use crate::period::Period;
 use chrono::{Datelike, NaiveDate};
 use std::fmt;
@@ -68,11 +69,11 @@ impl Date {
     /// The new date, wrapped in `Some`, if it is valid.
     /// `None` if the resulting date is not valid.
     #[must_use]
-    pub fn checked_add_years(self, rhs_years: i32) -> Option<Self> {
-        self.0.with_year(self.0.year() + rhs_years).map_or_else(
+    pub fn checked_add_years(self, rhs_years: Years) -> Option<Self> {
+        self.0.with_year(self.0.year() + rhs_years.0).map_or_else(
             || {
                 self.0.with_day(28).and_then(|date| {
-                    date.with_year(self.0.year() + rhs_years)
+                    date.with_year(self.0.year() + rhs_years.0)
                         .map(std::convert::Into::into)
                 })
             },
@@ -301,6 +302,7 @@ impl Date {
 #[cfg(test)]
 mod tests {
     use super::Date;
+    use crate::period::years::Years;
     use chrono::{Datelike, Weekday};
 
     #[test]
@@ -356,14 +358,14 @@ mod tests {
     #[test]
     fn test_add_years() {
         let date = Date::from_ymd(2023, 12, 31).unwrap();
-        let result = date.checked_add_years(1);
+        let result = date.checked_add_years(Years::new(1));
         assert!(result.is_some());
         let new_date = result.unwrap();
         assert_eq!(2024, new_date.year());
         assert_eq!(12, new_date.month());
         assert_eq!(31, new_date.day());
         let date = Date::from_ymd(2024, 2, 29).unwrap();
-        let result = date.checked_add_years(1);
+        let result = date.checked_add_years(Years::new(1));
         let new_date = result.unwrap();
         assert_eq!(2025, new_date.year());
         assert_eq!(2, new_date.month());
