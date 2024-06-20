@@ -1,3 +1,4 @@
+use num_traits::real::Real;
 use qlab_error::ComputeError::InvalidInput;
 use qlab_error::QLabResult;
 use qlab_math::interpolation::Interpolator;
@@ -9,14 +10,13 @@ use std::marker::PhantomData;
 /// A trait representing a yield curve with discount factor calculations.
 ///
 /// The trait is generic over the type of Realing point values (`V`) and the day count convention (`D`).
-pub struct YieldCurve<D: DayCount, V: Value, I: Interpolator<I, V>> {
+pub struct YieldCurve<D: DayCount, I: Interpolator> {
     settlement_date: Date,
     interpolator: I,
-    _phantom: PhantomData<V>,
     _day_count: PhantomData<D>,
 }
 
-impl<V: Value, D: DayCount, I: Interpolator<I, V>> YieldCurve<D, V, I> {
+impl<D: DayCount, I: Interpolator<Value: Value>> YieldCurve<D, I> {
     /// Creates a new instance of the `QLab` struct.
     ///
     /// # Arguments
@@ -33,7 +33,11 @@ impl<V: Value, D: DayCount, I: Interpolator<I, V>> YieldCurve<D, V, I> {
     ///
     /// # Errors
     /// Returns an `Err` variant if the lengths of `maturities` and `spot_yields` do not match.
-    pub fn new(settlement_date: Date, maturities: &[Date], spot_yields: &[V]) -> QLabResult<Self> {
+    pub fn new(
+        settlement_date: Date,
+        maturities: &[Date],
+        spot_yields: &[I::Value],
+    ) -> QLabResult<Self> {
         if maturities.len() != spot_yields.len() {
             return Err(
                 InvalidInput("maturities and spot_yields are different lengths".into()).into(),
@@ -42,7 +46,7 @@ impl<V: Value, D: DayCount, I: Interpolator<I, V>> YieldCurve<D, V, I> {
         let maturities: Vec<_> = maturities
             .iter()
             .map(|maturity| D::calculate_day_count_fraction(settlement_date, *maturity))
-            .collect::<Result<Vec<V>, _>>()?;
+            .collect::<Result<Vec<I::Value>, _>>()?;
         let val: Vec<_> = maturities
             .iter()
             .copied()
@@ -50,7 +54,6 @@ impl<V: Value, D: DayCount, I: Interpolator<I, V>> YieldCurve<D, V, I> {
             .collect();
         let interpolator = I::default().try_fit(&val)?;
         Ok(Self {
-            _phantom: PhantomData,
             settlement_date,
             _day_count: PhantomData,
             interpolator,
@@ -78,7 +81,7 @@ impl<V: Value, D: DayCount, I: Interpolator<I, V>> YieldCurve<D, V, I> {
     ///
     /// # Errors
     /// An Error returns if invalid inputs are passed
-    pub fn discount_factor(&self, d1: Date, d2: Date) -> QLabResult<V> {
+    pub fn discount_factor(&self, d1: Date, d2: Date) -> QLabResult<I::Value> {
         if d2 < d1 {
             return Err(
                 InvalidInput(format!("d1: {d1} must be smaller than d2: {d2}").into()).into(),
@@ -105,7 +108,7 @@ impl<V: Value, D: DayCount, I: Interpolator<I, V>> YieldCurve<D, V, I> {
     }
 
     // Calculates continuous yield at the specified time.
-    fn yield_curve(&self, t: V) -> QLabResult<V> {
+    fn yield_curve(&self, t: I::Value) -> QLabResult<I::Value> {
         Ok(self.interpolator.try_value(t)?)
     }
 }
@@ -119,7 +122,8 @@ mod tests {
     #[derive(Default)]
     struct Flat(f64);
 
-    impl Interpolator<Flat, f64> for Flat {
+    impl Interpolator for Flat {
+        type Value = f64;
         fn try_fit(self, _x_and_y: &[(f64, f64)]) -> Result<Self, InterpolationError<f64>> {
             Ok(self)
         }
@@ -136,7 +140,7 @@ mod tests {
         let spot_yields = vec![0.02]; // 2% yield
 
         let yield_curve =
-            YieldCurve::<Act365, _, Flat>::new(settlement_date, &maturities, &spot_yields).unwrap();
+            YieldCurve::<Act365, Flat>::new(settlement_date, &maturities, &spot_yields).unwrap();
 
         let d1 = Date::from_ymd(2023, 1, 1).unwrap();
         let d2 = Date::from_ymd(2023, 12, 31).unwrap();

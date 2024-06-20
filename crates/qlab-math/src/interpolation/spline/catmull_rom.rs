@@ -9,7 +9,9 @@ pub struct CatmullRom<V: Value> {
     points: Vec<Point2D<V>>,
 }
 
-impl<V: Value> Interpolator<CatmullRom<V>, V> for CatmullRom<V> {
+impl<V: Value> Interpolator for CatmullRom<V> {
+    type Value = V;
+
     /// Constructs a new `CatmullRom` from a slice of raw points.
     ///
     /// # Arguments

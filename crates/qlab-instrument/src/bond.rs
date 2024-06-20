@@ -179,10 +179,10 @@ impl<V: Value> Bond<V> {
     ///
     /// # Errors
     /// Error occurs if a discount factor calculation fails
-    pub fn discounted_value<D: DayCount, I: Interpolator<I, V>>(
+    pub fn discounted_value<D: DayCount, I: Interpolator<Value = V>>(
         &self,
         bond_settle_date: Date,
-        yield_curve: &YieldCurve<D, V, I>,
+        yield_curve: &YieldCurve<D, I>,
     ) -> QLabResult<V> {
         let mut pv = V::zero();
         for i in 0..self.bond_cash_flows.len() {

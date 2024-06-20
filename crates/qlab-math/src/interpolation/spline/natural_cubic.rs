@@ -9,7 +9,8 @@ pub struct NaturalCubic<V: Value> {
     points: Vec<Point2DWithSlope<V>>,
 }
 
-impl<V: Value> Interpolator<NaturalCubic<V>, V> for NaturalCubic<V> {
+impl<V: Value> Interpolator for NaturalCubic<V> {
+    type Value = V;
     /// Tries to create a new `NaturalCubic` from the given raw points.
     ///
     /// # Arguments

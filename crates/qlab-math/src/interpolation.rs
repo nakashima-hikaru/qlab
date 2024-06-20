@@ -40,7 +40,8 @@ impl<V> X<V> for Point2D<V> {
     }
 }
 
-pub trait Interpolator<I, V: Value>: Default {
+pub trait Interpolator: Default {
+    type Value: Value;
     /// Fits the model to the given data points.
     ///
     /// This function adjusts the parameters of the model to minimize the difference
@@ -54,7 +55,10 @@ pub trait Interpolator<I, V: Value>: Default {
     /// # Errors
     ///
     /// Returns an error if the fitting process fails.
-    fn try_fit(self, xs_and_ys: &[(V, V)]) -> Result<I, InterpolationError<V>>;
+    fn try_fit(
+        self,
+        xs_and_ys: &[(Self::Value, Self::Value)],
+    ) -> Result<Self, InterpolationError<Self::Value>>;
 
     /// Returns the value of type `V` and wraps it in a `QLabResult`.
     ///
@@ -69,7 +73,7 @@ pub trait Interpolator<I, V: Value>: Default {
     /// # Errors
     ///
     /// An Error returns if interpolation fails.
-    fn try_value(&self, t: V) -> Result<V, InterpolationError<V>>;
+    fn try_value(&self, t: Self::Value) -> Result<Self::Value, InterpolationError<Self::Value>>;
 }
 
 fn find_index_at_left_boundary<V: PartialOrd>(

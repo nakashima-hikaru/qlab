@@ -45,7 +45,8 @@ impl<V: Real> Linear<V> {
     }
 }
 
-impl<V: Value> Interpolator<Linear<V>, V> for Linear<V> {
+impl<V: Value> Interpolator for Linear<V> {
+    type Value = V;
     fn try_fit(mut self, raw_points: &[(V, V)]) -> Result<Self, InterpolationError<V>> {
         let mut points = Vec::with_capacity(raw_points.len());
         for &(x, y) in raw_points {
